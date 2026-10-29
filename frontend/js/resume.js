@@ -200,3 +200,4 @@ function renderAnalysisResults(analysis) {
 
     resultContainer.scrollIntoView({ behavior: "smooth" });
 }
+

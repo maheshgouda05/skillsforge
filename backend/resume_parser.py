@@ -128,3 +128,4 @@ def extract_resume_metadata(text: str) -> dict:
         "word_count": len(text.split()),
         "raw_text_preview": text[:1000] + ("..." if len(text) > 1000 else "")
     }
+

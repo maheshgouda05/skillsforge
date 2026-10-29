@@ -36,13 +36,31 @@ CACHE_TTL_SECONDS = 300  # 5 minutes
 
 
 def get_supabase() -> Client:
-    """Return initialized Supabase client or raise clean 503."""
+    """Return initialized Supabase admin client with pristine service_role privileges."""
+    global supabase
     if supabase is None:
+        if SUPABASE_URL and SUPABASE_SECRET_KEY:
+            supabase = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
+        else:
+            raise HTTPException(
+                status_code=503,
+                detail="Database service unavailable. Please check SUPABASE_URL and SUPABASE_SECRET_KEY in backend/.env"
+            )
+    return supabase
+
+
+def create_auth_client() -> Client:
+    """
+    Return a fresh Supabase client instance dedicated for user authentication flows.
+    This guarantees that the main admin client's service_role credentials and headers
+    are NEVER overwritten or contaminated with standard user bearer tokens.
+    """
+    if not SUPABASE_URL or not SUPABASE_SECRET_KEY:
         raise HTTPException(
             status_code=503,
             detail="Database service unavailable. Please check SUPABASE_URL and SUPABASE_SECRET_KEY in backend/.env"
         )
-    return supabase
+    return create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
 
 
 def verify_bearer_token(authorization: Optional[str] = Header(None)) -> Optional[dict]:

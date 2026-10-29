@@ -396,3 +396,4 @@ def analyze_skill_gap(
         "candidate_skills": sorted(list(candidate_set)),
         "recommended_projects": recommended_projects
     }
+

@@ -327,3 +327,4 @@ function logoutUser() {
         window.location.href = "auth.html";
     }, 600);
 }
+

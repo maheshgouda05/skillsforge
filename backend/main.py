@@ -43,6 +43,7 @@ from ai_service import (
 )
 from database import (
     get_supabase,
+    create_auth_client,
     verify_bearer_token,
     require_authenticated_user,
     db_insert,
@@ -148,79 +149,155 @@ def register_user(request: UserRegisterRequest):
     """Register a new student in Supabase Auth and initialize user profile."""
     client = get_supabase()
     email = request.email.strip().lower()
+    full_name = request.full_name.strip()
+    target_role = request.target_role or "Full Stack Developer"
+
+    user_id = None
+    email_confirmed = False
+    signup_session = None
 
     try:
-        # Create user via Supabase Auth Admin
-        user_response = client.auth.admin.create_user({
-            "email": email,
-            "password": request.password,
-            "email_confirm": True,
-            "user_metadata": {
-                "full_name": request.full_name,
-                "target_role": request.target_role or "Full Stack Developer",
-            }
-        })
+        # 1. Primary Strategy: Create user via Supabase Auth Admin (pre-confirms email)
+        try:
+            admin_resp = client.auth.admin.create_user({
+                "email": email,
+                "password": request.password,
+                "email_confirm": True,
+                "user_metadata": {
+                    "full_name": full_name,
+                    "target_role": target_role,
+                }
+            })
+            if admin_resp and admin_resp.user:
+                user_id = str(admin_resp.user.id)
+                email_confirmed = True
+        except Exception as admin_err:
+            admin_msg = str(admin_err).lower()
+            # If user already registered, propagate immediately to avoid masking
+            if "already" in admin_msg or "email_exists" in admin_msg or "unique" in admin_msg:
+                raise admin_err
 
-        user_id = str(user_response.user.id)
+            print(f"Admin create_user notice ({admin_err}); trying standard public sign_up fallback...")
+            # 2. Secondary Fallback: Standard Supabase Public Sign Up
+            signup_resp = client.auth.sign_up({
+                "email": email,
+                "password": request.password,
+                "options": {
+                    "data": {
+                        "full_name": full_name,
+                        "target_role": target_role
+                    }
+                }
+            })
+            if signup_resp and signup_resp.user:
+                user_id = str(signup_resp.user.id)
+                signup_session = getattr(signup_resp, "session", None)
+                if signup_resp.user.email_confirmed_at:
+                    email_confirmed = True
+            else:
+                raise admin_err
 
-        # Ensure user record exists in profiles table
+        if not user_id:
+            raise HTTPException(status_code=400, detail="Could not create user account in Supabase Auth.")
+
+        # 3. Ensure user record exists in profiles table
         from database import ensure_profile_exists
         ensure_profile_exists(
             profile_id=user_id,
             email=email,
-            full_name=request.full_name,
-            target_role=request.target_role or "Full Stack Developer"
+            full_name=full_name,
+            target_role=target_role
         )
 
-        # Sign in to provide session token, with retry for socket reset
+        # 4. Acquire access token for session
         access_token = None
-        for attempt in range(2):
-            try:
-                sign_in_res = client.auth.sign_in_with_password({
-                    "email": email,
-                    "password": request.password
-                })
-                access_token = sign_in_res.session.access_token
-                break
-            except Exception as sign_in_err:
-                if attempt == 0:
-                    import time
-                    time.sleep(0.5)
-                else:
-                    print(f"Direct sign-in fallback notice: {repr(sign_in_err)}")
+        if signup_session and signup_session.access_token:
+            access_token = signup_session.access_token
 
-        # Fallback local JWT if Supabase socket was reset
+        if not access_token:
+            auth_client = create_auth_client()
+            for attempt in range(2):
+                try:
+                    sign_in_res = auth_client.auth.sign_in_with_password({
+                        "email": email,
+                        "password": request.password
+                    })
+                    if sign_in_res and sign_in_res.session:
+                        access_token = sign_in_res.session.access_token
+                        break
+                except Exception as sign_in_err:
+                    err_str = str(sign_in_err).lower()
+                    if "not confirmed" in err_str:
+                        # Email confirmation required by Supabase project settings
+                        return {
+                            "message": "Registration successful! A verification email has been sent. Please confirm your email address before signing in.",
+                            "email_confirmation_required": True,
+                            "access_token": None,
+                            "user": {
+                                "id": user_id,
+                                "email": email,
+                                "full_name": full_name,
+                                "target_role": target_role
+                            }
+                        }
+                    if attempt == 0:
+                        import time
+                        time.sleep(0.5)
+
+        # 5. Local session fallback if socket was reset by network
         if not access_token:
             import jwt, time
             now = time.time()
             access_token = jwt.encode(
-                {"sub": user_id, "email": email, "exp": int(now + 86400), "user_metadata": {"full_name": request.full_name, "target_role": request.target_role}},
+                {"sub": user_id, "email": email, "exp": int(now + 86400), "user_metadata": {"full_name": full_name, "target_role": target_role}},
                 "fallback_secret",
                 algorithm="HS256"
             )
             from database import TOKEN_CACHE
             TOKEN_CACHE[access_token] = {
-                "user": {"id": user_id, "email": email, "user_metadata": {"full_name": request.full_name, "target_role": request.target_role}},
+                "user": {"id": user_id, "email": email, "user_metadata": {"full_name": full_name, "target_role": target_role}},
                 "timestamp": now
             }
 
         return {
             "message": "User registered successfully",
             "access_token": access_token,
+            "email_confirmation_required": False,
             "user": {
                 "id": user_id,
                 "email": email,
-                "full_name": request.full_name,
-                "target_role": request.target_role
+                "full_name": full_name,
+                "target_role": target_role
             }
         }
 
     except Exception as exc:
         msg = str(exc)
-        if "already registered" in msg.lower() or "unique" in msg.lower():
+        msg_lower = msg.lower()
+        if ("already" in msg_lower and "registered" in msg_lower) or "email_exists" in msg_lower or "unique" in msg_lower:
             raise HTTPException(
                 status_code=400,
                 detail="A user with this email address is already registered. Please log in."
+            )
+        elif "password" in msg_lower and ("least" in msg_lower or "short" in msg_lower or "weak" in msg_lower):
+            raise HTTPException(
+                status_code=400,
+                detail="Password must be at least 6 characters long."
+            )
+        elif "email" in msg_lower and ("valid" in msg_lower or "format" in msg_lower or "invalid" in msg_lower):
+            raise HTTPException(
+                status_code=400,
+                detail="Please provide a valid email address."
+            )
+        elif "rate limit" in msg_lower:
+            raise HTTPException(
+                status_code=429,
+                detail="Email rate limit exceeded. Please wait a few moments before trying again."
+            )
+        elif "not allowed" in msg_lower:
+            raise HTTPException(
+                status_code=400,
+                detail="Signups are not permitted by Supabase project settings. Please check Supabase Dashboard -> Authentication -> Providers -> Email -> 'Allow new users to sign up'."
             )
         raise HTTPException(
             status_code=400,
@@ -235,7 +312,8 @@ def login_user(request: UserLoginRequest):
     email = request.email.strip().lower()
 
     try:
-        sign_in_res = client.auth.sign_in_with_password({
+        auth_client = create_auth_client()
+        sign_in_res = auth_client.auth.sign_in_with_password({
             "email": email,
             "password": request.password
         })
@@ -272,6 +350,12 @@ def login_user(request: UserLoginRequest):
         }
 
     except Exception as exc:
+        msg = str(exc)
+        if "not confirmed" in msg.lower():
+            raise HTTPException(
+                status_code=400,
+                detail="Your email address has not been confirmed yet. Please check your inbox for the confirmation link, or verify your email in Supabase."
+            )
         raise HTTPException(
             status_code=401,
             detail="Invalid email or password. Please verify your credentials."
@@ -808,8 +892,7 @@ def toggle_task_endpoint(
     # Persist updated roadmap in Supabase
     try:
         db_update("learning_plans", plan_id, {
-            "plan_data": updated_plan,
-            "updated_at": datetime.now(timezone.utc).isoformat()
+            "plan_data": updated_plan
         })
     except Exception as exc:
         print(f"Supabase task toggle update notice: {repr(exc)}")
@@ -1000,8 +1083,7 @@ def adapt_planner_endpoint(
     # Update in Supabase
     try:
         db_update("learning_plans", plan_id, {
-            "plan_data": updated_plan,
-            "updated_at": datetime.now(timezone.utc).isoformat()
+            "plan_data": updated_plan
         })
     except Exception as exc:
         print(f"Supabase adaptive plan update notice: {repr(exc)}")

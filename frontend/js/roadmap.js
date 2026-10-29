@@ -230,3 +230,4 @@ async function handleTaskToggle(planId, taskId, isChecked) {
         if (taskContainer) taskContainer.classList.toggle("completed", !isChecked);
     }
 }
+

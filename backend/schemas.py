@@ -79,3 +79,4 @@ class WeeklyTestGenerateRequest(BaseModel):
 class WeeklyTestSubmitRequest(BaseModel):
     test_id: str = Field(...)
     answers: Dict[str, int] = Field(...)
+

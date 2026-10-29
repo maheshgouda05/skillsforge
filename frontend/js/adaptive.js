@@ -177,3 +177,4 @@ async function applyAdaptivePlan(testId, completedWeek, skill, scorePercent) {
         btn.innerText = "Apply Adaptive Changes to Roadmap →";
     }
 }
+

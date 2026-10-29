@@ -36,3 +36,4 @@ wheels/
 # Test & DB artifacts
 *.db
 *.sqlite3
+

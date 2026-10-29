@@ -100,11 +100,26 @@
         async function handleLogin(e) {
             e.preventDefault();
             const btn = document.getElementById('btn-login-submit');
+            const emailInput = document.getElementById('login-email');
+            const passwordInput = document.getElementById('login-password');
+
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
+
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showToast("Please enter a valid email address.", "warning");
+                emailInput.focus();
+                return;
+            }
+
+            if (!password) {
+                showToast("Please enter your password.", "warning");
+                passwordInput.focus();
+                return;
+            }
+
             btn.disabled = true;
             btn.innerText = "Signing in...";
-
-            const email = document.getElementById('login-email').value.trim();
-            const password = document.getElementById('login-password').value;
 
             try {
                 const res = await API.post('/api/auth/login', { email, password });
@@ -122,13 +137,37 @@
         async function handleRegister(e) {
             e.preventDefault();
             const btn = document.getElementById('btn-reg-submit');
+            const nameInput = document.getElementById('reg-name');
+            const emailInput = document.getElementById('reg-email');
+            const passwordInput = document.getElementById('reg-password');
+            const roleInput = document.getElementById('reg-role');
+
+            const fullName = nameInput.value.trim();
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
+            const targetRole = roleInput.value;
+
+            // Client-side validations
+            if (!fullName || fullName.length < 2) {
+                showToast("Please enter your full name (minimum 2 characters).", "warning");
+                nameInput.focus();
+                return;
+            }
+
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showToast("Please enter a valid email address.", "warning");
+                emailInput.focus();
+                return;
+            }
+
+            if (!password || password.length < 6) {
+                showToast("Password must be at least 6 characters long.", "warning");
+                passwordInput.focus();
+                return;
+            }
+
             btn.disabled = true;
             btn.innerText = "Creating account...";
-
-            const fullName = document.getElementById('reg-name').value.trim();
-            const email = document.getElementById('reg-email').value.trim();
-            const password = document.getElementById('reg-password').value;
-            const targetRole = document.getElementById('reg-role').value;
 
             try {
                 const res = await API.post('/api/auth/register', {
@@ -137,6 +176,17 @@
                     full_name: fullName,
                     target_role: targetRole
                 });
+
+                if (res.email_confirmation_required || !res.access_token) {
+                    showToast(res.message || "Account created! Please check your email to confirm your account.", "info");
+                    switchAuthTab('login');
+                    document.getElementById('login-email').value = email;
+                    document.getElementById('login-password').value = "";
+                    btn.disabled = false;
+                    btn.innerText = "Create Account & Start Planning";
+                    return;
+                }
+
                 API.setToken(res.access_token);
                 API.setUser(res.user);
                 showToast("Account created successfully! Redirecting...", "success");
@@ -163,3 +213,4 @@
     </script>
 </body>
 </html>
+
