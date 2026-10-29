@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard | Skills-to-Job Planner</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <!-- Chart.js CDN for modern interactive radar and progress charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<div class="app-layout">
+
+    <!-- ==================== SIDEBAR ==================== -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="brand-logo">SJ</div>
+            <div class="brand-info">
+                <span class="brand-title">Skills-to-Job</span>
+                <span class="brand-badge">Career Planner</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="#overview" class="nav-item active" data-tab="overview">
+                <span class="nav-icon">📊</span>
+                <span>Overview</span>
+            </a>
+            <a href="#resume" class="nav-item" data-tab="resume">
+                <span class="nav-icon">📄</span>
+                <span>Resume & Skills</span>
+            </a>
+            <a href="#job-match" class="nav-item" data-tab="job-match">
+                <span class="nav-icon">🎯</span>
+                <span>Role & Skill Gap</span>
+            </a>
+            <a href="#assessment" class="nav-item" data-tab="assessment">
+                <span class="nav-icon">⏱️</span>
+                <span>Technical Exam</span>
+            </a>
+            <a href="#roadmap" class="nav-item" data-tab="roadmap">
+                <span class="nav-icon">🗺️</span>
+                <span>Learning Roadmap</span>
+            </a>
+            <a href="#weekly-test" class="nav-item" data-tab="weekly-test">
+                <span class="nav-icon">🧠</span>
+                <span>Weekly & Adaptive</span>
+            </a>
+            <a href="#projects" class="nav-item" data-tab="projects">
+                <span class="nav-icon">🛠️</span>
+                <span>Capstone Projects</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-snippet">
+                <span class="user-snippet-name" id="sidebar-user-name">Student</span>
+                <span class="user-snippet-role" id="sidebar-user-role">Full Stack Developer</span>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="logoutUser()" title="Sign Out">
+                Sign Out
+            </button>
+        </div>
+    </aside>
+
+    <!-- ==================== MAIN CONTENT ==================== -->
+    <div class="main-wrapper">
+
+        <!-- Topbar -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <h1 class="topbar-title" id="current-tab-title">Student Dashboard</h1>
+            </div>
+            <div class="topbar-right">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <label for="target-role-select" style="font-size: 0.8125rem; font-weight: 600; color: var(--text-muted);">Target Job:</label>
+                    <select id="target-role-select" class="form-select" style="padding: 0.35rem 0.65rem; font-size: 0.85rem;" onchange="handleTargetRoleChange()">
+                        <option value="Full Stack Developer">Full Stack Developer</option>
+                        <option value="Python Developer">Python Developer</option>
+                        <option value="Frontend Developer">Frontend Developer</option>
+                        <option value="Backend Developer">Backend Developer</option>
+                        <option value="Data Analyst">Data Analyst</option>
+                        <option value="Data Scientist">Data Scientist</option>
+                        <option value="Machine Learning Engineer">Machine Learning Engineer</option>
+                        <option value="AI Engineer">AI Engineer</option>
+                        <option value="Software Engineer">Software Engineer</option>
+                    </select>
+                </div>
+                <span class="badge badge-success">● Connected</span>
+            </div>
+        </header>
+
+        <!-- Dynamic Content Area -->
+        <main class="content-area">
+
+            <!-- ==================== TAB 1: OVERVIEW ==================== -->
+            <section class="tab-pane active" id="pane-overview">
+                <!-- Welcome Banner -->
+                <div class="card" style="margin-bottom: 2rem; background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); color: #ffffff;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                        <div>
+                            <span class="badge" style="background: rgba(37,99,235,0.3); color: #93c5fd; border: 1px solid #3b82f6; margin-bottom: 0.5rem;">Career Readiness Active</span>
+                            <h2 style="color: #fff; font-size: 1.6rem; margin-top: 0.25rem;">
+                                Welcome, <span id="dashboard-welcome-name">Student</span>!
+                            </h2>
+                            <p style="color: #cbd5e1; font-size: 0.95rem; margin-top: 0.25rem;">
+                                Track your skill gaps, complete verified technical assessments, and progress through your personalized weekly roadmap.
+                            </p>
+                        </div>
+                        <div style="display: flex; gap: 0.75rem;">
+                            <button type="button" class="btn btn-primary" onclick="switchTab('resume')">📄 Upload Resume</button>
+                            <button type="button" class="btn btn-violet" onclick="switchTab('assessment')">⏱️ Take 20-MCQ Exam</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4 Core Metric Cards -->
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-icon-box metric-blue">🎯</div>
+                        <div class="metric-data">
+                            <span class="metric-value" id="stat-match-percentage">--%</span>
+                            <span class="metric-label">Target Role Match</span>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon-box metric-green">✓</div>
+                        <div class="metric-data">
+                            <span class="metric-value" id="stat-strong-skills">0</span>
+                            <span class="metric-label">Strong Verified Skills</span>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon-box metric-amber">⚠️</div>
+                        <div class="metric-data">
+                            <span class="metric-value" id="stat-skill-gaps">0</span>
+                            <span class="metric-label">Identified Skill Gaps</span>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon-box metric-violet">🗺️</div>
+                        <div class="metric-data">
+                            <span class="metric-value" id="stat-roadmap-completion">0%</span>
+                            <span class="metric-label">Roadmap Tasks Done</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty State Banners (Visible when user hasn't uploaded resume or taken exam) -->
+                <div id="dashboard-empty-resume-banner" class="card" style="margin-bottom: 1.5rem; background-color: var(--primary-light); border-color: var(--primary-border); display: none;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                        <div>
+                            <h4 style="color: var(--primary); margin-bottom: 0.25rem;">💡 Step 1: Upload Your Resume</h4>
+                            <p style="font-size: 0.875rem; color: var(--text-secondary);">
+                                Upload a PDF or DOCX resume so our AI can extract your current technical skillset and calculate your initial role matching score.
+                            </p>
+                        </div>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="switchTab('resume')">Upload Now →</button>
+                    </div>
+                </div>
+
+                <div id="dashboard-empty-assessment-banner" class="card" style="margin-bottom: 1.5rem; background-color: var(--warning-light); border-color: var(--warning-border); display: none;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                        <div>
+                            <h4 style="color: var(--warning-text); margin-bottom: 0.25rem;">📝 Step 2: Validate With Technical Assessment</h4>
+                            <p style="font-size: 0.875rem; color: var(--text-secondary);">
+                                Take the 20-MCQ timed technical evaluation to convert resume claims into verified proficiency scores.
+                            </p>
+                        </div>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="switchTab('assessment')">Start Assessment →</button>
+                    </div>
+                </div>
+
+                <!-- Overview Two-Column Analytics Layout -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                    <!-- Skill Competency Radar Chart -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <h3 class="card-title">Competency Radar</h3>
+                                <p class="card-subtitle">Technical evaluation breakdown across domains</p>
+                            </div>
+                            <span class="badge badge-primary">Real Data</span>
+                        </div>
+                        <div style="height: 280px; position: relative;">
+                            <canvas id="skills-radar-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Categorized Skill Breakdown -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <h3 class="card-title">Skill Inventory</h3>
+                                <p class="card-subtitle">Categorized by verified proficiency & target role</p>
+                            </div>
+                        </div>
+                        <div id="overview-skills-cloud" style="min-height: 200px; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: flex-start;">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity Feed -->
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <h3 class="card-title">Recent Activity</h3>
+                            <p class="card-subtitle">Chronological progress from your career journey</p>
+                        </div>
+                    </div>
+                    <div id="recent-activity-list">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== TAB 2: RESUME & SKILLS ==================== -->
+            <section class="tab-pane" id="pane-resume">
+                <div class="card" style="margin-bottom: 2rem;">
+                    <div class="card-header">
+                        <div>
+                            <h3 class="card-title">Resume Parsing & Skill Extraction</h3>
+                            <p class="card-subtitle">Upload your resume in PDF, DOCX, or TXT format. PyMuPDF extracts text, while Gemini AI identifies technical competencies.</p>
+                        </div>
+                    </div>
+
+                    <!-- Dropzone -->
+                    <div class="upload-dropzone" id="resume-dropzone">
+                        <div class="upload-icon">📄</div>
+                        <h4>Drag & drop your resume here, or click to browse</h4>
+                        <p class="form-hint">Supports PDF, DOCX, and TXT files up to 5MB</p>
+                    </div>
+                    <input type="file" id="resume-file-input" style="display: none;" accept=".pdf,.docx,.doc,.txt">
+
+                    <!-- Skills & Job Alignment Controls -->
+                    <div id="resume-analysis-controls" style="margin-top: 2rem; display: block;">
+                        <h4 style="margin-bottom: 0.5rem;">Detected & Editable Skills</h4>
+                        <p class="form-hint" style="margin-bottom: 1rem;">
+                            Review the skills extracted from your resume. You can remove incorrect skills or manually add missing ones.
+                        </p>
+
+                        <!-- Tag Cloud Container -->
+                        <div class="tag-cloud" id="extracted-skills-tags">
+                            <span style="font-size: 0.85rem; color: var(--text-muted);">No skills detected yet. Upload a resume or add skills below.</span>
+                        </div>
+
+                        <!-- Manual Add Skill Input -->
+                        <div style="display: flex; gap: 0.5rem; margin-top: 1rem; max-width: 400px;">
+                            <input type="text" id="custom-skill-input" class="form-control" placeholder="e.g. docker, fastapi, react">
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="addCustomSkill()">+ Add Skill</button>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 2rem;">
+                            <!-- Target Role & Custom Job Desc -->
+                            <div>
+                                <label class="form-label" for="resume-target-role">Target Job Role</label>
+                                <select id="resume-target-role" class="form-select" onchange="document.getElementById('target-role-select').value = this.value">
+                                    <option value="Full Stack Developer">Full Stack Developer</option>
+                                    <option value="Python Developer">Python Developer</option>
+                                    <option value="Frontend Developer">Frontend Developer</option>
+                                    <option value="Backend Developer">Backend Developer</option>
+                                    <option value="Data Analyst">Data Analyst</option>
+                                    <option value="Data Scientist">Data Scientist</option>
+                                    <option value="Machine Learning Engineer">Machine Learning Engineer</option>
+                                    <option value="AI Engineer">AI Engineer</option>
+                                    <option value="Software Engineer">Software Engineer</option>
+                                </select>
+
+                                <label class="form-label" for="job-desc-input" style="margin-top: 1.25rem;">
+                                    Optional Job Description
+                                </label>
+                                <textarea id="job-desc-input" class="form-control" rows="4" placeholder="Paste specific job requirements or posting text here to perform custom keyword matching..."></textarea>
+                            </div>
+
+                            <!-- Study Hours Slider -->
+                            <div>
+                                <label class="form-label">Available Study Hours</label>
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                                    <span style="font-size: 0.85rem; color: var(--text-muted);">How much time can you commit?</span>
+                                    <span id="study-hours-display" style="font-weight: 700; color: var(--primary);">8 hrs/week</span>
+                                </div>
+                                <input type="range" id="study-hours-input" min="2" max="40" value="8" step="1" style="width: 100%; accent-color: var(--primary);">
+
+                                <div style="background-color: var(--bg-surface-alt); padding: 1.25rem; border-radius: var(--radius-md); margin-top: 1.5rem; border: 1px solid var(--border);">
+                                    <h5 style="margin-bottom: 0.25rem;">Ready to Align?</h5>
+                                    <p style="font-size: 0.8125rem; color: var(--text-muted); margin-bottom: 1rem;">
+                                        Clicking analyze compares your skills against the industry standard requirements for your target role and builds your initial roadmap.
+                                    </p>
+                                    <button type="button" id="btn-run-analysis" class="btn btn-primary" style="width: 100%;" onclick="runCompleteAnalysis()">
+                                        🚀 Run Complete Skill Gap Analysis
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analysis Result Card -->
+                <div class="card" id="analysis-result-container" style="display: none; margin-top: 2rem;">
+                    <div class="card-header">
+                        <div>
+                            <h3 class="card-title">Skill Gap Analysis Results</h3>
+                            <p class="card-subtitle">Target Job: <strong id="result-target-role">Role</strong></p>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="font-size: 1.75rem; font-weight: 800; color: var(--primary);" id="result-match-score">0%</span>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Role Match Score</div>
+                        </div>
+                    </div>
+
+                    <!-- AI Coaching Feedback -->
+                    <div style="background-color: var(--primary-light); border: 1px solid var(--primary-border); padding: 1rem 1.25rem; border-radius: var(--radius-md); margin-bottom: 1.5rem;">
+                        <div style="font-size: 0.9rem; font-weight: 700; color: var(--primary); margin-bottom: 0.25rem;">
+                            🤖 Gemini AI Career Coaching Advice:
+                        </div>
+                        <p id="result-ai-advice" style="font-size: 0.875rem; color: var(--text-primary); line-height: 1.5;"></p>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                        <div>
+                            <h4 style="font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--success);">Strong Skills Detected</h4>
+                            <div id="result-strong-skills" style="display: flex; flex-wrap: wrap; gap: 0.35rem;"></div>
+                        </div>
+                        <div>
+                            <h4 style="font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--danger);">Critical Gaps to Close</h4>
+                            <div id="result-missing-skills" style="display: flex; flex-wrap: wrap; gap: 0.35rem;"></div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
+                        <button type="button" class="btn btn-primary" onclick="switchTab('roadmap')">View Personalized Roadmap →</button>
+                        <button type="button" class="btn btn-violet" onclick="switchTab('assessment')">Take 20-MCQ Exam →</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== TAB 3: ROLE & SKILL GAP ==================== -->
+            <section class="tab-pane" id="pane-job-match">
+                <div class="card" style="margin-bottom: 2rem;">
+                    <div class="card-header">
+                        <div>
+                            <h3 class="card-title">Target Role & Industry Skill Gap Matrix</h3>
+                            <p class="card-subtitle">Explore competencies expected by top tech recruiters across 9 engineering specializations.</p>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem;" id="role-cards-grid">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== TAB 4: TECHNICAL ASSESSMENT ==================== -->
+            <section class="tab-pane" id="pane-assessment">
+                <!-- Intro State -->
+                <div id="assessment-intro" class="card" style="max-width: 800px; margin: 0 auto;">
+                    <div style="text-align: center; margin-bottom: 2rem;">
+                        <div style="font-size: 3rem; margin-bottom: 0.75rem;">⏱️</div>
+                        <h2>20-Question Technical Competency Exam</h2>
+                        <p style="color: var(--text-secondary); max-width: 580px; margin: 0.5rem auto 0 auto;">
+                            Demonstrate genuine technical knowledge. Our exam randomly selects 20 questions across core languages, databases, web protocols, and data structures.
+                        </p>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                        <div style="background-color: var(--bg-surface-alt); padding: 1rem; border-radius: var(--radius-md); text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: 800; color: var(--primary);">20</div>
+                            <div style="font-size: 0.8125rem; color: var(--text-muted); font-weight: 600;">Multiple Choice Questions</div>
+                        </div>
+                        <div style="background-color: var(--bg-surface-alt); padding: 1rem; border-radius: var(--radius-md); text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: 800; color: var(--violet);">25:00</div>
+                            <div style="font-size: 0.8125rem; color: var(--text-muted); font-weight: 600;">Countdown Timer</div>
+                        </div>
+                        <div style="background-color: var(--bg-surface-alt); padding: 1rem; border-radius: var(--radius-md); text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: 800; color: var(--success);">Instant</div>
+                            <div style="font-size: 0.8125rem; color: var(--text-muted); font-weight: 600;">Grading & Detailed Key</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="max-width: 400px; margin: 0 auto 1.5rem auto;">
+                        <label class="form-label" for="assessment-role-select">Select Domain for Assessment:</label>
+                        <select id="assessment-role-select" class="form-select">
+                            <option value="Full Stack Developer">Full Stack Developer</option>
+                            <option value="Python Developer">Python Developer</option>
+                            <option value="Frontend Developer">Frontend Developer</option>
+                            <option value="Backend Developer">Backend Developer</option>
+                            <option value="Data Analyst">Data Analyst</option>
+                            <option value="Data Scientist">Data Scientist</option>
+                            <option value="Machine Learning Engineer">Machine Learning Engineer</option>
+                            <option value="AI Engineer">AI Engineer</option>
+                            <option value="Software Engineer">Software Engineer</option>
+                        </select>
+                    </div>
+
+                    <div style="text-align: center;">
+                        <button type="button" id="btn-start-assessment" class="btn btn-primary btn-lg" onclick="startAssessment()">
+                            Start 20-Question Assessment
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Active Exam View -->
+                <div id="assessment-active" class="assessment-wrapper" style="display: none;">
+                    <div class="assessment-header">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <span style="font-weight: 800; font-size: 1.1rem;">Technical Evaluation</span>
+                            <span class="badge" style="background: rgba(255,255,255,0.2); color: #fff;" id="q-skill-badge">Python</span>
+                            <span class="badge" style="background: rgba(255,255,255,0.1); color: #cbd5e1;" id="q-difficulty-badge">Medium</span>
+                        </div>
+                        <div class="timer-pill" id="timer-pill">
+                            <span>⏱️</span>
+                            <span id="timer-display">25:00</span>
+                        </div>
+                    </div>
+
+                    <div class="assessment-body">
+                        <!-- Question Pane -->
+                        <div class="assessment-question-pane">
+                            <div class="question-meta">
+                                <span style="font-size: 0.875rem; font-weight: 700; color: var(--text-muted);" id="q-counter">
+                                    Question 1 of 20
+                                </span>
+                                <button type="button" id="btn-flag-q" class="btn btn-secondary btn-sm" onclick="toggleFlagQuestion()">
+                                    ⚑ Flag for Review
+                                </button>
+                            </div>
+
+                            <h3 class="question-text" id="q-text">
+                                Question text goes here...
+                            </h3>
+
+                            <div class="options-list" id="q-options-container">
+                                <!-- Options rendered via JS -->
+                            </div>
+
+                            <div class="assessment-nav-controls">
+                                <button type="button" id="btn-prev-q" class="btn btn-secondary" onclick="prevQuestion()">
+                                    &larr; Previous
+                                </button>
+                                <button type="button" id="btn-next-q" class="btn btn-primary" onclick="nextQuestion()">
+                                    Next Question &rarr;
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Question Palette Pane -->
+                        <div class="assessment-palette-pane">
+                            <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Question Palette</h4>
+                            <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
+                                Click any number to jump directly to that question.
+                            </p>
+
+                            <div class="palette-grid" id="palette-grid">
+                                <!-- 20 buttons rendered dynamically -->
+                            </div>
+
+                            <div style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.75rem;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span style="width: 12px; height: 12px; background: var(--primary); border-radius: 2px;"></span> Answered
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span style="width: 12px; height: 12px; background: var(--warning); border-radius: 2px;"></span> Flagged for Review
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span style="width: 12px; height: 12px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: 2px;"></span> Unanswered
+                                </div>
+                            </div>
+
+                            <button type="button" class="btn btn-danger btn-sm" style="width: 100%; margin-top: 1.5rem;" onclick="confirmSubmitModal()">
+                                Finish & Submit Exam
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Assessment Results View -->
+                <div id="assessment-results" class="card" style="display: none; margin-top: 2rem;">
+                    <div class="card-header">
+                        <div>
+                            <h3 class="card-title">Technical Assessment Results</h3>
+                            <p class="card-subtitle">Verified performance across all 20 questions</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="font-size: 2.25rem; font-weight: 800; color: var(--primary);" id="final-score-percent">0%</span>
+                            <div style="font-size: 0.85rem; color: var(--text-muted);" id="final-score-fraction">0 of 20 correct</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <span id="score-grade-badge" class="badge badge-primary">Proficiency Level</span>
+                    </div>
+
+                    <!-- Topic Breakdown Bars -->
+                    <div style="margin-bottom: 2rem;">
+                        <h4 style="font-size: 1rem; margin-bottom: 1rem;">Domain Score Breakdown</h4>
+                        <div id="skill-breakdown-bars">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Detailed Answer Review with Explanations -->
+                    <div style="margin-bottom: 2rem;">
+                        <h4 style="font-size: 1rem; margin-bottom: 1rem;">Answer Key & Detailed Explanations</h4>
+                        <div id="answer-review-list">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
+                        <button type="button" class="btn btn-primary" onclick="switchTab('roadmap')">Proceed to Roadmap →</button>
+                        <button type="button" class="btn btn-secondary" onclick="retakeAssessment()">Retake Assessment</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== TAB 5: ROADMAP ==================== -->
+            <section class="tab-pane" id="pane-roadmap">
+                <div id="roadmap-container">
+                    <!-- Loaded dynamically via roadmap.js -->
+                </div>
+            </section>
+
+            <!-- ==================== TAB 6: WEEKLY ASSESSMENTS & ADAPTATION ==================== -->
+            <section class="tab-pane" id="pane-weekly-test">
+                <!-- Intro -->
+                <div id="weekly-test-intro" class="card" style="max-width: 700px; margin: 0 auto;">
+                    <div style="text-align: center; margin-bottom: 1.5rem;">
+                        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🧠</div>
+                        <h2>Weekly Assessment & Adaptive Learning</h2>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                            Take a focused 5-question weekly quiz. Your score directly influences the upcoming week's curriculum—introducing advanced topics if you excel, or injecting reinforcement if you need practice.
+                        </p>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div class="form-group">
+                            <label class="form-label" for="weekly-skill-input">Focus Skill</label>
+                            <input type="text" id="weekly-skill-input" class="form-control" value="python" placeholder="e.g. python, sql">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="weekly-week-input">Week Number</label>
+                            <input type="number" id="weekly-week-input" class="form-control" value="1" min="1" max="52">
+                        </div>
+                    </div>
+
+                    <button type="button" id="btn-generate-weekly" class="btn btn-primary" style="width: 100%;" onclick="generateWeeklyTest()">
+                        Start Weekly Quiz
+                    </button>
+                </div>
+
+                <!-- Active Weekly Quiz -->
+                <div id="weekly-test-active" style="display: none; max-width: 800px; margin: 0 auto;">
+                    <div class="card" style="margin-bottom: 1.5rem; background-color: var(--bg-surface);">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3 id="weekly-quiz-title">Week 1 Assessment</h3>
+                            <span class="badge badge-primary">5 Questions</span>
+                        </div>
+                    </div>
+
+                    <div id="weekly-questions-container">
+                        <!-- Questions rendered via JS -->
+                    </div>
+
+                    <button type="button" id="btn-submit-weekly" class="btn btn-success btn-lg" style="width: 100%;" onclick="submitWeeklyTest()">
+                        Submit & Evaluate
+                    </button>
+                </div>
+
+                <!-- Weekly Results & Adaptive Plan Trigger -->
+                <div id="weekly-test-results" class="card" style="display: none; max-width: 700px; margin: 2rem auto;">
+                    <div class="card-header">
+                        <div>
+                            <h3 class="card-title">Weekly Evaluation Complete</h3>
+                            <p class="card-subtitle" id="adaptive-mastery-tier">Assessment Outcome</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="font-size: 2rem; font-weight: 800; color: var(--primary);" id="weekly-score-display">0%</span>
+                            <div style="font-size: 0.8rem; color: var(--text-muted);" id="weekly-fraction-display">0 of 5 correct</div>
+                        </div>
+                    </div>
+
+                    <div style="background-color: var(--violet-light); border: 1px solid var(--violet); padding: 1.25rem; border-radius: var(--radius-md); margin-bottom: 1.5rem;">
+                        <h4 style="color: var(--violet); margin-bottom: 0.35rem;">Adaptive Curriculum Recommendation:</h4>
+                        <p id="adaptive-advice-text" style="font-size: 0.9rem; color: var(--text-primary); line-height: 1.5;"></p>
+                    </div>
+
+                    <button type="button" id="btn-apply-adaptation" class="btn btn-primary" style="width: 100%;">
+                        Apply Adaptive Changes to Roadmap &rarr;
+                    </button>
+                </div>
+            </section>
+
+            <!-- ==================== TAB 7: RECOMMENDED PROJECTS ==================== -->
+            <section class="tab-pane" id="pane-projects">
+                <div class="card" style="margin-bottom: 2rem;">
+                    <div class="card-header">
+                        <div>
+                            <h3 class="card-title">Recommended Capstone Projects</h3>
+                            <p class="card-subtitle">Industry-vetted projects designed to prove proficiency in job interviews</p>
+                        </div>
+                    </div>
+                    <div id="recommended-projects-list">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="js/api.js"></script>
+<script src="js/resume.js"></script>
+<script src="js/assessment.js"></script>
+<script src="js/roadmap.js"></script>
+<script src="js/adaptive.js"></script>
+<script src="js/dashboard.js"></script>
+
+<script>
+    // Role selection updater
+    function handleTargetRoleChange() {
+        const val = document.getElementById("target-role-select").value;
+        const user = API.getUser() || {};
+        user.target_role = val;
+        API.setUser(user);
+        const roleEl = document.getElementById("sidebar-user-role");
+        if (roleEl) roleEl.innerText = val;
+
+        const resumeRole = document.getElementById("resume-target-role");
+        if (resumeRole) resumeRole.value = val;
+
+        const assRole = document.getElementById("assessment-role-select");
+        if (assRole) assRole.value = val;
+
+        showToast(`Target role set to ${val}`, "info");
+
+        // Sync to backend if authenticated
+        API.put("/api/auth/profile", { target_role: val }).catch(() => {});
+    }
+
+    // Populate role cards in Role Explorer tab
+    API.get("/api/roles").then(data => {
+        const grid = document.getElementById("role-cards-grid");
+        if (!grid || !data.roles) return;
+        grid.innerHTML = data.roles.map(r => `
+            <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <span class="badge badge-violet" style="margin-bottom: 0.5rem;">${escapeHtml(r.category)}</span>
+                    <h4 style="font-size: 1.1rem; margin-bottom: 0.35rem;">${escapeHtml(r.title)}</h4>
+                    <p style="font-size: 0.8125rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 0.75rem;">
+                        ${escapeHtml(r.description)}
+                    </p>
+                    <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.35rem;">Core Skills:</div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 1rem;">
+                        ${r.core_skills.map(s => `<span class="badge badge-primary">${escapeHtml(s)}</span>`).join("")}
+                    </div>
+                </div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="selectRoleAndAnalyze('${r.title}')">
+                    Target This Role →
+                </button>
+            </div>
+        `).join("");
+    }).catch(console.warn);
+
+    function selectRoleAndAnalyze(roleTitle) {
+        document.getElementById("target-role-select").value = roleTitle;
+        handleTargetRoleChange();
+        switchTab("resume");
+    }
+</script>
+
+</body>
+</html>

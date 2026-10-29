@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In / Register | Skills-to-Job Planner</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/auth.css">
+</head>
+<body class="auth-page">
+
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="brand-logo" style="width: 44px; height: 44px; border-radius: 10px; background: linear-gradient(135deg, #2563eb, #6366f1); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 1.25rem;">
+                SJ
+            </div>
+            <h2 id="auth-title" style="margin-top: 0.75rem;">Welcome to Skills-to-Job Planner</h2>
+            <p id="auth-subtitle" style="font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem;">Sign in to continue your personalized career journey</p>
+        </div>
+
+        <!-- Auth Tabs: Login vs Register -->
+        <div class="auth-tabs">
+            <div class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Sign In</div>
+            <div class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">Create Account</div>
+        </div>
+
+        <!-- Login Form -->
+        <form id="form-login" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label class="form-label" for="login-email">Email Address</label>
+                <input type="email" id="login-email" class="form-control" placeholder="student@example.com" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="login-password">Password</label>
+                <input type="password" id="login-password" class="form-control" placeholder="••••••••" required>
+            </div>
+            <button type="submit" id="btn-login-submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">
+                Sign In to Dashboard
+            </button>
+        </form>
+
+        <!-- Register Form -->
+        <form id="form-register" style="display: none;" onsubmit="handleRegister(event)">
+            <div class="form-group">
+                <label class="form-label" for="reg-name">Full Name</label>
+                <input type="text" id="reg-name" class="form-control" placeholder="Alex Morgan" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="reg-email">Email Address</label>
+                <input type="email" id="reg-email" class="form-control" placeholder="alex@example.com" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="reg-password">Password</label>
+                <input type="password" id="reg-password" class="form-control" placeholder="Min. 6 characters" minlength="6" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="reg-role">Target Career Role</label>
+                <select id="reg-role" class="form-select">
+                    <option value="Full Stack Developer">Full Stack Developer</option>
+                    <option value="Python Developer">Python Developer</option>
+                    <option value="Frontend Developer">Frontend Developer</option>
+                    <option value="Backend Developer">Backend Developer</option>
+                    <option value="Data Analyst">Data Analyst</option>
+                    <option value="Data Scientist">Data Scientist</option>
+                    <option value="Machine Learning Engineer">Machine Learning Engineer</option>
+                    <option value="AI Engineer">AI Engineer</option>
+                    <option value="Software Engineer">Software Engineer</option>
+                </select>
+            </div>
+            <button type="submit" id="btn-reg-submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">
+                Create Account & Start Planning
+            </button>
+        </form>
+
+        <div class="auth-divider">OR</div>
+
+        <!-- Quick Guest Demo Access for Judges -->
+        <div style="display: flex; flex-direction: column; gap: 0.65rem;">
+            <button type="button" class="btn btn-secondary" onclick="loginGuestDemo()" style="width: 100%;">
+                ⚡ Quick Demo Access (For Judges / Reviewers)
+            </button>
+            <a href="index.html" class="btn btn-outline btn-sm" style="width: 100%; border: none;">
+                &larr; Back to Home
+            </a>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        function switchAuthTab(tab) {
+            const isLogin = tab === 'login';
+            document.getElementById('tab-login').classList.toggle('active', isLogin);
+            document.getElementById('tab-register').classList.toggle('active', !isLogin);
+            document.getElementById('form-login').style.display = isLogin ? 'block' : 'none';
+            document.getElementById('form-register').style.display = isLogin ? 'none' : 'block';
+            document.getElementById('auth-title').innerText = isLogin ? 'Welcome to Skills-to-Job Planner' : 'Create Student Account';
+            document.getElementById('auth-subtitle').innerText = isLogin ? 'Sign in to continue your personalized career journey' : 'Start your guided roadmap to job readiness';
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-login-submit');
+            btn.disabled = true;
+            btn.innerText = "Signing in...";
+
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+
+            try {
+                const res = await API.post('/api/auth/login', { email, password });
+                API.setToken(res.access_token);
+                API.setUser(res.user);
+                showToast("Login successful! Redirecting...", "success");
+                setTimeout(() => { window.location.href = "dashboard.html"; }, 800);
+            } catch (err) {
+                showToast(err.message || "Failed to sign in. Please verify your credentials.", "error");
+                btn.disabled = false;
+                btn.innerText = "Sign In to Dashboard";
+            }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-reg-submit');
+            btn.disabled = true;
+            btn.innerText = "Creating account...";
+
+            const fullName = document.getElementById('reg-name').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
+            const password = document.getElementById('reg-password').value;
+            const targetRole = document.getElementById('reg-role').value;
+
+            try {
+                const res = await API.post('/api/auth/register', {
+                    email,
+                    password,
+                    full_name: fullName,
+                    target_role: targetRole
+                });
+                API.setToken(res.access_token);
+                API.setUser(res.user);
+                showToast("Account created successfully! Redirecting...", "success");
+                setTimeout(() => { window.location.href = "dashboard.html"; }, 800);
+            } catch (err) {
+                showToast(err.message || "Registration failed.", "error");
+                btn.disabled = false;
+                btn.innerText = "Create Account & Start Planning";
+            }
+        }
+
+        function loginGuestDemo() {
+            // Instant demo account setup for evaluation
+            const demoUser = {
+                id: "guest-judge-session",
+                email: "evaluator@hackathon.org",
+                full_name: "Hackathon Judge",
+                target_role: "Full Stack Developer"
+            };
+            API.setUser(demoUser);
+            showToast("Entering platform in Judge Evaluation mode...", "info");
+            setTimeout(() => { window.location.href = "dashboard.html"; }, 600);
+        }
+    </script>
+</body>
+</html>

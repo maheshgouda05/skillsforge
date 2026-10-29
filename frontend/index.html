@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skills-to-Job Planner | AI Career Readiness Platform</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Landing Page Specific Enhancements */
+        .hero {
+            padding: 5rem 1.5rem 4rem 1.5rem;
+            text-align: center;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: var(--primary-light);
+            color: var(--primary);
+            padding: 0.4rem 1rem;
+            border-radius: var(--radius-full);
+            font-size: 0.875rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--primary-border);
+        }
+        .hero-title {
+            font-size: 3.25rem;
+            font-weight: 800;
+            line-height: 1.15;
+            color: var(--text-primary);
+            margin-bottom: 1.25rem;
+            letter-spacing: -0.03em;
+        }
+        .hero-title span {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--violet) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .hero-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 2.25rem;
+            line-height: 1.6;
+        }
+        .hero-actions {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .nav-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem 2.5rem;
+            background-color: var(--bg-surface);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .journey-section {
+            background-color: #0f172a;
+            color: #ffffff;
+            padding: 4.5rem 1.5rem;
+            border-radius: var(--radius-lg);
+            margin: 3rem 1.5rem;
+        }
+        .journey-step-card {
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            color: #ffffff;
+            text-align: center;
+            transition: var(--transition);
+        }
+        .journey-step-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+        .step-number {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--violet) 100%);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 0.75rem auto;
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2.5rem;
+        }
+        .feature-card {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            box-shadow: var(--shadow-sm);
+        }
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header class="nav-header">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div class="brand-logo" style="width: 38px; height: 38px; border-radius: 8px; background: linear-gradient(135deg, #2563eb, #6366f1); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800;">
+                SJ
+            </div>
+            <div>
+                <h3 style="font-size: 1.15rem; font-weight: 800; line-height: 1;">Skills-to-Job Planner</h3>
+                <span style="font-size: 0.75rem; color: var(--violet); font-weight: 600;">AI Career Readiness Platform</span>
+            </div>
+        </div>
+
+        <nav style="display: flex; align-items: center; gap: 1.5rem;">
+            <a href="#features" style="font-weight: 600; color: var(--text-secondary);">Features</a>
+            <a href="#journey" style="font-weight: 600; color: var(--text-secondary);">User Journey</a>
+            <a href="auth.html" class="btn btn-secondary btn-sm">Sign In</a>
+            <a href="dashboard.html" class="btn btn-primary btn-sm">Launch Dashboard</a>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-badge">
+            ⚡ Powered by Supabase & Gemini AI
+        </div>
+        <h1 class="hero-title">
+            Bridge the Gap Between Your Skills and Your <span>Dream Career</span>
+        </h1>
+        <p class="hero-subtitle">
+            An intelligent AI career planner that extracts candidate skills from resumes, performs rigorous 20-MCQ technical assessments, discovers critical knowledge gaps, and dynamically adapts an 8-week structured roadmap to make you job-ready.
+        </p>
+        <div class="hero-actions">
+            <a href="dashboard.html#resume" class="btn btn-primary btn-lg">
+                🚀 Upload Resume & Begin
+            </a>
+            <a href="dashboard.html#assessment" class="btn btn-secondary btn-lg">
+                📝 Take Technical Assessment
+            </a>
+        </div>
+    </section>
+
+    <!-- Complete User Journey Section -->
+    <section id="journey" class="journey-section">
+        <div style="text-align: center; max-width: 700px; margin: 0 auto 3rem auto;">
+            <span class="badge badge-primary" style="background: rgba(37,99,235,0.2); color: #60a5fa; border: 1px solid #3b82f6;">End-to-End Pipeline</span>
+            <h2 style="color: #fff; margin-top: 0.75rem; font-size: 2.2rem;">Complete User Journey</h2>
+            <p style="color: #94a3b8; font-size: 1rem; margin-top: 0.5rem;">
+                Every stage in the career preparation journey is deeply connected, stored securely in Supabase, and evaluated continuously.
+            </p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <div class="journey-step-card">
+                <div class="step-number">1</div>
+                <h4 style="font-size: 0.95rem; margin-bottom: 0.35rem;">Register / Login</h4>
+                <p style="font-size: 0.8rem; color: #94a3b8;">Secure student profile setup with Supabase Auth.</p>
+            </div>
+            <div class="journey-step-card">
+                <div class="step-number">2</div>
+                <h4 style="font-size: 0.95rem; margin-bottom: 0.35rem;">Upload Resume</h4>
+                <p style="font-size: 0.8rem; color: #94a3b8;">PDF, DOCX, & TXT text extraction via PyMuPDF.</p>
+            </div>
+            <div class="journey-step-card">
+                <div class="step-number">3</div>
+                <h4 style="font-size: 0.95rem; margin-bottom: 0.35rem;">Skill Extraction</h4>
+                <p style="font-size: 0.8rem; color: #94a3b8;">AI & rule-based parser detects technical skills with edit options.</p>
+            </div>
+            <div class="journey-step-card">
+                <div class="step-number">4</div>
+                <h4 style="font-size: 0.95rem; margin-bottom: 0.35rem;">Target Job</h4>
+                <p style="font-size: 0.8rem; color: #94a3b8;">Select from 9 career roles or supply custom descriptions.</p>
+            </div>
+            <div class="journey-step-card">
+                <div class="step-number">5</div>
+                <h4 style="font-size: 0.95rem; margin-bottom: 0.35rem;">Technical Assessment</h4>
+                <p style="font-size: 0.8rem; color: #94a3b8;">20-MCQ timed evaluation with live navigation grid.</p>
+            </div>
+            <div class="journey-step-card">
+                <div class="step-number">6</div>
+                <h4 style="font-size: 0.95rem; margin-bottom: 0.35rem;">Skill Gap Analysis</h4>
+                <p style="font-size: 0.8rem; color: #94a3b8;">Classification into Strong, Intermediate, Weak, and Missing.</p>
+            </div>
+            <div class="journey-step-card">
+                <div class="step-number">7</div>
+                <h4 style="font-size: 0.95rem; margin-bottom: 0.35rem;">Personalized Roadmap</h4>
+                <p style="font-size: 0.8rem; color: #94a3b8;">8-week structured curriculum with daily tasks & resources.</p>
+            </div>
+            <div class="journey-step-card">
+                <div class="step-number">8</div>
+                <h4 style="font-size: 0.95rem; margin-bottom: 0.35rem;">Adaptive Updates</h4>
+                <p style="font-size: 0.8rem; color: #94a3b8;">Weekly tests dynamically adjust future study plans.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Core Features Section -->
+    <section id="features" style="max-width: 1200px; margin: 0 auto; padding: 4rem 1.5rem;">
+        <div style="text-align: center; max-width: 600px; margin: 0 auto 3rem auto;">
+            <span class="badge badge-violet">Built for Job Readiness</span>
+            <h2 style="margin-top: 0.75rem;">Engineered for Real Student Outcomes</h2>
+            <p style="margin-top: 0.5rem; color: var(--text-muted);">
+                Everything you need to transform theoretical knowledge into real-world interview confidence.
+            </p>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">📄</div>
+                <h3 style="margin-bottom: 0.5rem;">Multi-Format Resume Parser</h3>
+                <p style="font-size: 0.9rem;">
+                    Upload resumes in PDF, DOCX, or TXT format. PyMuPDF extracts text accurately, identifying over 35+ technology stacks while allowing students to review and refine extracted skills.
+                </p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <h3 style="margin-bottom: 0.5rem;">Job Role Matching</h3>
+                <p style="font-size: 0.9rem;">
+                    Comprehensive skill taxonomy for 9 in-demand roles including Python Developer, Full Stack, Data Scientist, ML Engineer, and AI Engineer, plus custom job description support.
+                </p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">⏱️</div>
+                <h3 style="margin-bottom: 0.5rem;">20-Question MCQ Engine</h3>
+                <p style="font-size: 0.9rem;">
+                    Full-featured test engine with a countdown timer, 20-question navigation palette, flagged questions, automatic scoring, and topic-wise performance breakdown.
+                </p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🗺️</div>
+                <h3 style="margin-bottom: 0.5rem;">8-Week Dynamic Roadmap</h3>
+                <p style="font-size: 0.9rem;">
+                    A personalized curriculum breaking down weekly objectives into Day 1 - Day 5 actionable tasks with persistent completion checkboxes and curated official references.
+                </p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🧠</div>
+                <h3 style="margin-bottom: 0.5rem;">Adaptive Learning Engine</h3>
+                <p style="font-size: 0.9rem;">
+                    Weekly assessments evaluate retention. If a student struggles in SQL, future weeks inject reinforcement; if they master Python, the plan accelerates to advanced capstones.
+                </p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3 style="margin-bottom: 0.5rem;">Real-Time Progress Dashboard</h3>
+                <p style="font-size: 0.9rem;">
+                    Authentic analytics powered by Supabase. Zero fake sample metrics—displays actual student scores, skill gaps, completion rates, and recommended portfolio projects.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer style="background-color: var(--bg-surface); border-top: 1px solid var(--border); padding: 3rem 1.5rem; text-align: center; margin-top: 4rem;">
+        <div style="max-width: 600px; margin: 0 auto;">
+            <h4 style="font-size: 1.1rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.5rem;">Skills-to-Job Planner</h4>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+                National Hackathon Project Submission &bull; Powered by FastAPI, Supabase PostgreSQL, and Google Gemini AI.
+            </p>
+            <a href="dashboard.html" class="btn btn-primary btn-sm">Enter Student Platform</a>
+        </div>
+    </footer>
+
+</body>
+</html>
