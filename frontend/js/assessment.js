@@ -9,19 +9,44 @@ let flaggedQuestions = {};
 let timerInterval = null;
 let timeRemainingSeconds = 0;
 
+function getDeterminedAssessmentDomain() {
+    // 1. Saved target role from authenticated user
+    const user = API.getUser() || {};
+    if (user.target_role && user.target_role.trim()) {
+        return user.target_role.trim();
+    }
+
+    // 2. Target role selected in Resume & Skills section
+    const resumeRole = document.getElementById("resume-target-role");
+    if (resumeRole && resumeRole.value && resumeRole.value.trim()) {
+        return resumeRole.value.trim();
+    }
+
+    // 3. Target role from active learning plan
+    if (window.currentRoadmap && window.currentRoadmap.target_role) {
+        return window.currentRoadmap.target_role;
+    }
+
+    // 4. Sensible default fallback
+    return "Full Stack Developer";
+}
+
 async function startAssessment() {
-    const roleSelect = document.getElementById("assessment-role-select");
-    const targetRole = roleSelect ? roleSelect.value : "Full Stack Developer";
+    const targetRole = getDeterminedAssessmentDomain();
+    const skills = (window.currentExtractedSkills && window.currentExtractedSkills.length > 0)
+        ? window.currentExtractedSkills
+        : null;
 
     const btn = document.getElementById("btn-start-assessment");
     if (btn) {
         btn.disabled = true;
-        btn.innerText = "Generating 20-Question Exam...";
+        btn.innerText = `Generating 20-Question Exam for ${targetRole}...`;
     }
 
     try {
         const res = await API.post("/api/assessment/generate", {
             target_role: targetRole,
+            skills: skills,
             count: 20
         });
 
@@ -40,7 +65,7 @@ async function startAssessment() {
         renderActiveQuestion();
         startTimer();
 
-        showToast("Assessment started! 25-minute timer running.", "info");
+        showToast(`Technical assessment started for ${targetRole}! 25-minute timer running.`, "info");
 
     } catch (err) {
         showToast(err.message || "Failed to generate assessment.", "error");

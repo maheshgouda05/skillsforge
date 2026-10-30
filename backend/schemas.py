@@ -45,7 +45,7 @@ class ResumeAnalyzeManualRequest(BaseModel):
 # -------------------- ASSESSMENT SCHEMAS --------------------
 
 class AssessmentGenerateRequest(BaseModel):
-    target_role: Optional[str] = Field(default="Full Stack Developer")
+    target_role: Optional[str] = Field(default=None)
     skills: Optional[List[str]] = Field(default=None)
     count: int = Field(default=20, ge=5, le=50)
 

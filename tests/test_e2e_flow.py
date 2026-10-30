@@ -10,7 +10,7 @@ def request_json(endpoint, method="GET", data=None, token=None):
     headers = {"Content-Type": "application/json"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
-    body = json.dumps(data).encode("utf-8") if data else None
+    body = json.dumps(data).encode("utf-8") if data is not None else None
     req = urllib.request.Request(url, data=body, headers=headers, method=method)
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
@@ -106,13 +106,11 @@ def run_tests():
     print(f"  Missing skills identified: {[m['skill'] for m in analysis['missing_skills']]}")
 
     # 6. Generate 20-MCQ Technical Assessment
-    print("\n6. Testing 20-MCQ Technical Assessment Generation...")
-    assessment_req = {
-        "target_role": "Python Developer",
-        "count": 20
-    }
-    exam = request_json("/api/assessment/generate", method="POST", data=assessment_req, token=token)
+    print("\n6. Testing 20-MCQ Technical Assessment Generation (Automatic Domain Detection)...")
+    # Omit target_role to verify automatic determination from student profile & resume skills
+    exam = request_json("/api/assessment/generate", method="POST", data={}, token=token)
     assert exam["total_questions"] == 20, f"Expected 20 questions, got {exam['total_questions']}"
+    assert exam["target_role"] == "Python Developer", f"Expected auto-detected Python Developer, got {exam['target_role']}"
     assert len(exam["questions"]) == 20, "Questions array length mismatch"
     # Verify answers are NOT exposed!
     for q in exam["questions"]:

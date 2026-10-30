@@ -107,11 +107,13 @@ function updateUserDisplay(user) {
     const roleEl = document.getElementById("sidebar-user-role");
     const headerName = document.getElementById("dashboard-welcome-name");
     const roleBadge = document.getElementById("topbar-role-badge");
+    const assBadge = document.getElementById("assessment-auto-domain-badge");
 
     if (nameEl) nameEl.innerText = user.full_name || "Student";
     if (roleEl) roleEl.innerText = user.target_role || "Full Stack Developer";
     if (headerName) headerName.innerText = user.full_name || "Student";
     if (roleBadge) roleBadge.innerText = user.target_role || "Full Stack Developer";
+    if (assBadge) assBadge.innerText = user.target_role || "Full Stack Developer";
 
     const resumeRoleSelect = document.getElementById("resume-target-role");
     if (resumeRoleSelect && user.target_role) {

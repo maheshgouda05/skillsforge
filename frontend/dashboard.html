@@ -350,19 +350,9 @@
                         </div>
                     </div>
 
-                    <div class="form-group" style="max-width: 400px; margin: 0 auto 1.5rem auto;">
-                        <label class="form-label" for="assessment-role-select">Select Domain for Assessment:</label>
-                        <select id="assessment-role-select" class="form-select">
-                            <option value="Full Stack Developer">Full Stack Developer</option>
-                            <option value="Python Developer">Python Developer</option>
-                            <option value="Frontend Developer">Frontend Developer</option>
-                            <option value="Backend Developer">Backend Developer</option>
-                            <option value="Data Analyst">Data Analyst</option>
-                            <option value="Data Scientist">Data Scientist</option>
-                            <option value="Machine Learning Engineer">Machine Learning Engineer</option>
-                            <option value="AI Engineer">AI Engineer</option>
-                            <option value="Software Engineer">Software Engineer</option>
-                        </select>
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 1.75rem;">
+                        <span style="font-size: 0.875rem; color: var(--text-muted); font-weight: 500;">Tailored to Your Target Role:</span>
+                        <span class="badge badge-primary" id="assessment-auto-domain-badge" style="font-size: 0.875rem; padding: 0.35rem 0.75rem;">Full Stack Developer</span>
                     </div>
 
                     <div style="text-align: center;">
@@ -610,8 +600,8 @@
         const resumeRole = document.getElementById("resume-target-role");
         if (resumeRole && resumeRole.value !== val) resumeRole.value = val;
 
-        const assRole = document.getElementById("assessment-role-select");
-        if (assRole) assRole.value = val;
+        const assBadge = document.getElementById("assessment-auto-domain-badge");
+        if (assBadge) assBadge.innerText = val;
 
         showToast(`Target role set to ${val}`, "info");
 

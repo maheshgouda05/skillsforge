@@ -706,19 +706,78 @@ def get_latest_analysis(current_user: Optional[dict] = Depends(verify_bearer_tok
 
 @app.post("/api/assessment/generate")
 def generate_technical_assessment(
-    request: AssessmentGenerateRequest,
+    request: Optional[AssessmentGenerateRequest] = None,
     current_user: Optional[dict] = Depends(verify_bearer_token)
 ):
     """
-    Generate a 20-MCQ technical assessment tailored to the target role & skills.
+    Generate a 20-MCQ technical assessment automatically tailored to the target role,
+    uploaded resume skills, and student learning profile.
     Crucial: Never exposes correct answers or explanations before submission.
     """
-    target_role = request.target_role or "Full Stack Developer"
-    count = request.count or 20
+    target_role = request.target_role if request else None
+    profile_id = current_user["id"] if current_user else None
+    client = get_supabase()
 
-    if request.skills and len(request.skills) > 0:
-        questions = get_questions_for_skills(request.skills, count=count)
+    # Automatically determine target role & relevant profile skills if not explicitly provided
+    candidate_skills = list(request.skills) if (request and request.skills) else []
+
+    if profile_id:
+        # 1. Check user metadata from JWT session
+        if not target_role and current_user and current_user.get("user_metadata", {}).get("target_role"):
+            target_role = current_user["user_metadata"]["target_role"]
+
+        # 2. Check in-memory plans and analyses for this student
+        if not target_role:
+            for p in IN_MEMORY_PLANS.values():
+                if p.get("profile_id") == profile_id and p.get("target_role"):
+                    target_role = p["target_role"]
+                    break
+        if not target_role:
+            for a in IN_MEMORY_ANALYSES.values():
+                if a.get("profile_id") == profile_id and a.get("target_role"):
+                    target_role = a["target_role"]
+                    break
+
+        # 3. Check Supabase DB tables
+        try:
+            if not target_role:
+                prof_res = client.table("profiles").select("target_role").eq("id", profile_id).limit(1).execute()
+                if prof_res.data and prof_res.data[0].get("target_role"):
+                    target_role = prof_res.data[0]["target_role"]
+
+            ana_res = client.table("skill_analyses").select("target_role, strong_skills, missing_skills").eq("user_id", profile_id).order("created_at", desc=True).limit(1).execute()
+            if ana_res.data:
+                latest_ana = ana_res.data[0]
+                if not target_role and latest_ana.get("target_role"):
+                    target_role = latest_ana["target_role"]
+                missing = [s.get("skill", s) if isinstance(s, dict) else s for s in (latest_ana.get("missing_skills") or [])]
+                strong = [s.get("skill", s) if isinstance(s, dict) else s for s in (latest_ana.get("strong_skills") or [])]
+                candidate_skills = list(set(candidate_skills + missing + strong))
+
+            if not target_role:
+                plan_res = client.table("learning_plans").select("target_role").eq("user_id", profile_id).order("created_at", desc=True).limit(1).execute()
+                if plan_res.data and plan_res.data[0].get("target_role"):
+                    target_role = plan_res.data[0]["target_role"]
+
+        except Exception as exc:
+            print(f"Profile context lookup notice: {repr(exc)}")
+
+    # Sensible default fallback if profile info is unavailable
+    if not target_role or not target_role.strip():
+        target_role = "Full Stack Developer"
+
+    count = request.count if (request and request.count) else 20
+
+    # Build balanced questions using target role skills plus student's extracted skills
+    core_skills, secondary_skills = get_role_skills(target_role)
+    all_target_skills = list(set(core_skills + secondary_skills + candidate_skills))
+
+    if all_target_skills:
+        questions = get_questions_for_skills(all_target_skills, count=count)
     else:
+        questions = get_questions_for_role(target_role, count=count)
+
+    if len(questions) < count:
         questions = get_questions_for_role(target_role, count=count)
 
     assessment_id = str(uuid.uuid4())
