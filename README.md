@@ -1,4 +1,4 @@
-# Skills-to-Job Planner
+# SkillForge (Skills-to-Job Planner)
 
 > **AI-Powered Career Readiness & Technical Assessment Platform**  
 > *Final Hackathon Submission*
@@ -254,11 +254,10 @@ For live hackathon judging:
    - Click **"Start 20-Question Assessment"**.
    - Notice the 25-minute live timer, question palette navigation, and instant grading with detailed answer explanations.
 5. In the **Learning Roadmap** tab:
-   - View your customized 8-week curriculum.
+   - View your customized 14-week curriculum.
    - Check off daily tasks—notice the progress bar updates and tasks stay checked even after refreshing the page!
 6. In the **Weekly & Adaptive** tab:
    - Take a quick 5-question weekly quiz.
    - Click **"Apply Adaptive Changes to Roadmap"** to watch the future weeks automatically adapt based on your score without overwriting past weeks!
 7. In the **Overview** tab:
    - Review your live Competency Radar Chart, real activity history, and recommended capstone projects.
-
