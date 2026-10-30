@@ -6,12 +6,25 @@ Full REST API supporting authentication, resume analysis, AI skill extraction,
 import json
 import os
 import random
+import sys
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Dict, List, Optional, Any
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Depends, Query, status
+# Ensure backend directory is in sys.path so modules resolve whether imported
+# from root as `backend.main:app` (e.g. on Vercel) or directly inside backend/
+_BACKEND_DIR = Path(__file__).resolve().parent
+if str(_BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(_BACKEND_DIR))
+_ROOT_DIR = _BACKEND_DIR.parent
+if str(_ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(_ROOT_DIR))
+
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Depends, Query, Header, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 # Core local modules
@@ -90,10 +103,43 @@ IN_MEMORY_ANALYSES: Dict[str, dict] = {}
 RECOVERY_SESSIONS: Dict[str, dict] = {}
 
 
+# -------------------- FRONTEND STATIC ASSETS & ROOT --------------------
+
+_FRONTEND_DIR = _ROOT_DIR / "frontend"
+if _FRONTEND_DIR.exists():
+    _css_dir = _FRONTEND_DIR / "css"
+    _js_dir = _FRONTEND_DIR / "js"
+    if _css_dir.exists():
+        app.mount("/css", StaticFiles(directory=str(_css_dir)), name="css")
+    if _js_dir.exists():
+        app.mount("/js", StaticFiles(directory=str(_js_dir)), name="js")
+
+    @app.get("/index.html", include_in_schema=False)
+    def serve_index_html():
+        return FileResponse(str(_FRONTEND_DIR / "index.html"))
+
+    @app.get("/dashboard.html", include_in_schema=False)
+    def serve_dashboard_html():
+        return FileResponse(str(_FRONTEND_DIR / "dashboard.html"))
+
+    @app.get("/auth.html", include_in_schema=False)
+    def serve_auth_html():
+        return FileResponse(str(_FRONTEND_DIR / "auth.html"))
+
+    @app.get("/reset-password.html", include_in_schema=False)
+    def serve_reset_password_html():
+        return FileResponse(str(_FRONTEND_DIR / "reset-password.html"))
+
+
 # -------------------- HEALTH & SYSTEM ENDPOINTS --------------------
 
 @app.get("/")
-def root():
+def root(accept: Optional[str] = Header(None)):
+    """Root endpoint: serves frontend index.html for browsers, and status JSON for API clients."""
+    if accept and "text/html" in accept and _FRONTEND_DIR.exists():
+        index_file = _FRONTEND_DIR / "index.html"
+        if index_file.exists():
+            return FileResponse(str(index_file))
     return {
         "name": "Skills-to-Job Planner API",
         "version": "2.0.0",
