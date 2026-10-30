@@ -37,6 +37,9 @@ function setupNavigation() {
 }
 
 function switchTab(tabId) {
+    // If user attempts to navigate to removed job-match, redirect to resume
+    if (tabId === "job-match") tabId = "resume";
+
     // Validate target pane exists
     const targetPane = document.getElementById(`pane-${tabId}`);
     if (!targetPane) tabId = "overview";
@@ -60,15 +63,20 @@ function switchTab(tabId) {
     const titles = {
         "overview": "Student Dashboard",
         "resume": "Resume & Skill Extraction",
-        "job-match": "Target Role & Skill Gap Analysis",
         "assessment": "20-MCQ Technical Assessment",
-        "roadmap": "Personalized 8-Week Roadmap",
+        "roadmap": "Personalized 14-Week Roadmap",
         "weekly-test": "Weekly Assessment & Adaptation",
         "projects": "Recommended Capstone Projects"
     };
     const titleEl = document.getElementById("current-tab-title");
     if (titleEl) {
         titleEl.innerText = titles[tabId] || "Skills-to-Job Planner";
+    }
+
+    // Restrict global Target Job Role selector: appear ONLY on Resume & Skills section
+    const topRoleContainer = document.getElementById("topbar-role-selector-container");
+    if (topRoleContainer) {
+        topRoleContainer.style.display = (tabId === "resume") ? "flex" : "none";
     }
 
     window.location.hash = `#${tabId}`;
@@ -98,10 +106,17 @@ function updateUserDisplay(user) {
     const nameEl = document.getElementById("sidebar-user-name");
     const roleEl = document.getElementById("sidebar-user-role");
     const headerName = document.getElementById("dashboard-welcome-name");
+    const roleBadge = document.getElementById("topbar-role-badge");
 
     if (nameEl) nameEl.innerText = user.full_name || "Student";
     if (roleEl) roleEl.innerText = user.target_role || "Full Stack Developer";
     if (headerName) headerName.innerText = user.full_name || "Student";
+    if (roleBadge) roleBadge.innerText = user.target_role || "Full Stack Developer";
+
+    const resumeRoleSelect = document.getElementById("resume-target-role");
+    if (resumeRoleSelect && user.target_role) {
+        resumeRoleSelect.value = user.target_role;
+    }
 
     const topRoleSelect = document.getElementById("target-role-select");
     if (topRoleSelect && user.target_role) {

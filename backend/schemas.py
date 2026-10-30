@@ -18,6 +18,16 @@ class UserLoginRequest(BaseModel):
     password: str = Field(...)
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    token_or_otp: str = Field(..., min_length=4, max_length=128)
+    new_password: str = Field(..., min_length=6, max_length=100)
+
+
 class UserProfileUpdateRequest(BaseModel):
     full_name: Optional[str] = None
     target_role: Optional[str] = None

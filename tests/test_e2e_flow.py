@@ -141,8 +141,8 @@ def run_tests():
     print("\n8. Testing Active Roadmap Fetch...")
     roadmap = request_json("/api/planner/current", token=token)
     assert roadmap["has_plan"] is True, "Plan not found"
-    assert len(roadmap["weeks"]) == 8, f"Expected 8 weeks, got {len(roadmap['weeks'])}"
-    print(f"✓ Retrieved 8-week curriculum for {roadmap['target_role']} (Total tasks: {roadmap['total_tasks']})")
+    assert len(roadmap["weeks"]) == 14, f"Expected 14 weeks, got {len(roadmap['weeks'])}"
+    print(f"✓ Retrieved 14-week curriculum for {roadmap['target_role']} (Total tasks: {roadmap['total_tasks']})")
 
     # 9. Toggle Task Completion & Verify Persistence
     print("\n9. Testing Task Completion & Persistence...")
@@ -207,7 +207,42 @@ def run_tests():
     print("✓ Student Dashboard loaded with 100% real Supabase metrics!")
     print(f"  Match: {dash['match_percentage']}%, Tasks: {dash['completed_tasks']}/{dash['total_tasks']}, Activity events: {len(dash['recent_activity'])}")
 
-    print("\n=== ALL 11 END-TO-END TESTS PASSED WITH 100% SUCCESS! ===")
+    # 12. Forgot & Reset Password Flow
+    print("\n12. Testing Forgot & Reset Password Flow in Supabase...")
+    new_test_password = "UpdatedPassword@456"
+    forgot_res = request_json("/api/auth/forgot-password", method="POST", data={"email": test_email})
+    assert forgot_res.get("otp"), "OTP not returned in recovery request"
+    recovery_otp = forgot_res["otp"]
+    print(f"✓ Recovery OTP code generated for {test_email}: {recovery_otp}")
+
+    reset_res = request_json("/api/auth/reset-password", method="POST", data={
+        "email": test_email,
+        "token_or_otp": recovery_otp,
+        "new_password": new_test_password
+    })
+    assert "updated" in reset_res.get("message", "").lower()
+    print("✓ Password reset verified with Supabase Auth Admin.")
+
+    # Verify old password fails
+    try:
+        request_json("/api/auth/login", method="POST", data={
+            "email": test_email,
+            "password": "Password@123"
+        })
+        raise AssertionError("Old password was not invalidated after reset!")
+    except urllib.error.HTTPError as err:
+        assert err.code == 401
+        print("✓ Old password successfully rejected (401).")
+
+    # Verify new password succeeds
+    login_new = request_json("/api/auth/login", method="POST", data={
+        "email": test_email,
+        "password": new_test_password
+    })
+    assert login_new.get("access_token"), "Login with new password failed"
+    print("✓ Successfully logged in with new password!")
+
+    print("\n=== ALL 12 END-TO-END TESTS PASSED WITH 100% SUCCESS! ===")
 
 if __name__ == "__main__":
     run_tests()

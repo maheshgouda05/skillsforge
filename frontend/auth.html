@@ -31,7 +31,10 @@
                 <input type="email" id="login-email" class="form-control" placeholder="student@example.com" required>
             </div>
             <div class="form-group">
-                <label class="form-label" for="login-password">Password</label>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                    <label class="form-label" for="login-password" style="margin-bottom: 0;">Password</label>
+                    <a href="javascript:void(0)" onclick="openForgotView()" id="link-forgot-password" style="font-size: 0.8125rem; color: var(--primary); font-weight: 600; text-decoration: none;">Forgot Password?</a>
+                </div>
                 <input type="password" id="login-password" class="form-control" placeholder="••••••••" required>
             </div>
             <button type="submit" id="btn-login-submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">
@@ -72,16 +75,68 @@
             </button>
         </form>
 
-        <div class="auth-divider">OR</div>
+        <!-- Forgot Password Flow -->
+        <div id="auth-forgot-flow" style="display: none;">
+            <!-- Step 1: Request Code -->
+            <form id="form-forgot-step1" onsubmit="handleForgotPassword(event)">
+                <div class="form-group">
+                    <label class="form-label" for="forgot-email">Registered Email Address</label>
+                    <input type="email" id="forgot-email" class="form-control" placeholder="student@example.com" required>
+                    <p class="form-hint" style="margin-top: 0.4rem; font-size: 0.8125rem; color: var(--text-muted);">
+                        Enter your registered email. We will generate a secure verification code to reset your account password.
+                    </p>
+                </div>
+                <button type="submit" id="btn-forgot-send" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">
+                    Send Recovery Code
+                </button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="cancelForgotView()" style="width: 100%; margin-top: 0.75rem;">
+                    &larr; Back to Sign In
+                </button>
+            </form>
 
-        <!-- Quick Guest Demo Access for Judges -->
-        <div style="display: flex; flex-direction: column; gap: 0.65rem;">
-            <button type="button" class="btn btn-secondary" onclick="loginGuestDemo()" style="width: 100%;">
-                ⚡ Quick Demo Access (For Judges / Reviewers)
-            </button>
-            <a href="index.html" class="btn btn-outline btn-sm" style="width: 100%; border: none;">
-                &larr; Back to Home
-            </a>
+            <!-- Step 2: Enter Code & New Password -->
+            <form id="form-forgot-step2" style="display: none;" onsubmit="handleResetPassword(event)">
+                <div id="forgot-otp-banner" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 0.75rem; border-radius: var(--radius-md); font-size: 0.85rem; margin-bottom: 1.25rem;">
+                    A verification code has been generated. Enter it below with your new password.
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="reset-email">Email Address</label>
+                    <input type="email" id="reset-email" class="form-control" readonly style="background-color: var(--bg-surface-alt); cursor: not-allowed;">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="reset-otp">Verification Code / OTP</label>
+                    <input type="text" id="reset-otp" class="form-control" placeholder="e.g. 123456" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="reset-new-password">New Password</label>
+                    <input type="password" id="reset-new-password" class="form-control" placeholder="Min. 6 characters" minlength="6" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="reset-confirm-password">Confirm New Password</label>
+                    <input type="password" id="reset-confirm-password" class="form-control" placeholder="Re-enter new password" minlength="6" required>
+                </div>
+                <button type="submit" id="btn-reset-submit" class="btn btn-success" style="width: 100%; margin-top: 0.5rem;">
+                    Reset Password & Continue
+                </button>
+                <div style="display: flex; justify-content: space-between; margin-top: 1rem;">
+                    <a href="javascript:void(0)" onclick="openForgotView()" style="font-size: 0.8125rem; color: var(--text-muted); text-decoration: none;">&larr; Request New Code</a>
+                    <a href="javascript:void(0)" onclick="cancelForgotView()" style="font-size: 0.8125rem; color: var(--primary); font-weight: 600; text-decoration: none;">Back to Sign In</a>
+                </div>
+            </form>
+        </div>
+
+        <div id="auth-secondary-actions">
+            <div class="auth-divider">OR</div>
+
+            <!-- Quick Guest Demo Access for Judges -->
+            <div style="display: flex; flex-direction: column; gap: 0.65rem;">
+                <button type="button" class="btn btn-secondary" onclick="loginGuestDemo()" style="width: 100%;">
+                    ⚡ Quick Demo Access (For Judges / Reviewers)
+                </button>
+                <a href="index.html" class="btn btn-outline btn-sm" style="width: 100%; border: none;">
+                    &larr; Back to Home
+                </a>
+            </div>
         </div>
     </div>
 
@@ -209,6 +264,129 @@
             API.setUser(demoUser);
             showToast("Entering platform in Judge Evaluation mode...", "info");
             setTimeout(() => { window.location.href = "dashboard.html"; }, 600);
+        }
+
+        // ==================== FORGOT & RESET PASSWORD FLOW ====================
+
+        function openForgotView() {
+            document.querySelector('.auth-tabs').style.display = 'none';
+            document.getElementById('form-login').style.display = 'none';
+            document.getElementById('form-register').style.display = 'none';
+            document.getElementById('auth-secondary-actions').style.display = 'none';
+            
+            document.getElementById('auth-forgot-flow').style.display = 'block';
+            document.getElementById('form-forgot-step1').style.display = 'block';
+            document.getElementById('form-forgot-step2').style.display = 'none';
+
+            document.getElementById('auth-title').innerText = 'Reset Your Password';
+            document.getElementById('auth-subtitle').innerText = 'Enter your registered email to receive a recovery code';
+
+            const currentLoginEmail = document.getElementById('login-email').value.trim();
+            if (currentLoginEmail) {
+                document.getElementById('forgot-email').value = currentLoginEmail;
+            }
+        }
+
+        function cancelForgotView() {
+            document.querySelector('.auth-tabs').style.display = 'flex';
+            document.getElementById('auth-forgot-flow').style.display = 'none';
+            document.getElementById('auth-secondary-actions').style.display = 'block';
+            switchAuthTab('login');
+        }
+
+        async function handleForgotPassword(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-forgot-send');
+            const emailInput = document.getElementById('forgot-email');
+            const email = emailInput.value.trim().toLowerCase();
+
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showToast("Please enter a valid registered email address.", "warning");
+                emailInput.focus();
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = "Generating recovery code...";
+
+            try {
+                const res = await API.post('/api/auth/forgot-password', { email });
+                showToast(res.message || "Recovery code generated successfully!", "success");
+
+                // Advance to step 2
+                document.getElementById('form-forgot-step1').style.display = 'none';
+                document.getElementById('form-forgot-step2').style.display = 'block';
+                document.getElementById('reset-email').value = email;
+
+                const banner = document.getElementById('forgot-otp-banner');
+                if (res.otp) {
+                    document.getElementById('reset-otp').value = res.otp;
+                    banner.innerHTML = `✓ Verification code generated for <strong>${escapeHtml(email)}</strong>.<br>Code: <strong style="font-size: 1.1rem; color: #1e3a8a; letter-spacing: 2px;">${escapeHtml(res.otp)}</strong> (Auto-filled below for quick verification).`;
+                    banner.style.display = 'block';
+                } else {
+                    banner.innerHTML = `Verification code sent to <strong>${escapeHtml(email)}</strong>. Please check your inbox.`;
+                    banner.style.display = 'block';
+                }
+
+                document.getElementById('reset-new-password').focus();
+            } catch (err) {
+                showToast(err.message || "Could not generate recovery code. Please check your email.", "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Send Recovery Code";
+            }
+        }
+
+        async function handleResetPassword(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-reset-submit');
+            const email = document.getElementById('reset-email').value.trim();
+            const otp = document.getElementById('reset-otp').value.trim();
+            const newPassword = document.getElementById('reset-new-password').value;
+            const confirmPassword = document.getElementById('reset-confirm-password').value;
+
+            if (!otp) {
+                showToast("Please enter the verification code or recovery token.", "warning");
+                document.getElementById('reset-otp').focus();
+                return;
+            }
+
+            if (!newPassword || newPassword.length < 6) {
+                showToast("New password must be at least 6 characters long.", "warning");
+                document.getElementById('reset-new-password').focus();
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                showToast("Passwords do not match. Please re-enter.", "warning");
+                document.getElementById('reset-confirm-password').focus();
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = "Updating password in Supabase...";
+
+            try {
+                const res = await API.post('/api/auth/reset-password', {
+                    email,
+                    token_or_otp: otp,
+                    new_password: newPassword
+                });
+
+                showToast(res.message || "Password updated! You can now log in.", "success");
+
+                // Switch back to login form with new credentials prefilled
+                cancelForgotView();
+                document.getElementById('login-email').value = email;
+                document.getElementById('login-password').value = newPassword;
+                document.getElementById('btn-login-submit').focus();
+
+            } catch (err) {
+                showToast(err.message || "Password reset failed.", "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Reset Password & Continue";
+            }
         }
     </script>
 </body>

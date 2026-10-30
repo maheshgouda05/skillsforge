@@ -32,10 +32,6 @@
                 <span class="nav-icon">📄</span>
                 <span>Resume & Skills</span>
             </a>
-            <a href="#job-match" class="nav-item" data-tab="job-match">
-                <span class="nav-icon">🎯</span>
-                <span>Role & Skill Gap</span>
-            </a>
             <a href="#assessment" class="nav-item" data-tab="assessment">
                 <span class="nav-icon">⏱️</span>
                 <span>Technical Exam</span>
@@ -75,20 +71,9 @@
             </div>
             <div class="topbar-right">
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <label for="target-role-select" style="font-size: 0.8125rem; font-weight: 600; color: var(--text-muted);">Target Job:</label>
-                    <select id="target-role-select" class="form-select" style="padding: 0.35rem 0.65rem; font-size: 0.85rem;" onchange="handleTargetRoleChange()">
-                        <option value="Full Stack Developer">Full Stack Developer</option>
-                        <option value="Python Developer">Python Developer</option>
-                        <option value="Frontend Developer">Frontend Developer</option>
-                        <option value="Backend Developer">Backend Developer</option>
-                        <option value="Data Analyst">Data Analyst</option>
-                        <option value="Data Scientist">Data Scientist</option>
-                        <option value="Machine Learning Engineer">Machine Learning Engineer</option>
-                        <option value="AI Engineer">AI Engineer</option>
-                        <option value="Software Engineer">Software Engineer</option>
-                    </select>
+                    <span class="badge badge-primary" id="topbar-role-badge" style="font-size: 0.8125rem; padding: 0.35rem 0.65rem;">Full Stack Developer</span>
+                    <span class="badge badge-success">● Connected</span>
                 </div>
-                <span class="badge badge-success">● Connected</span>
             </div>
         </header>
 
@@ -257,7 +242,7 @@
                             <!-- Target Role & Custom Job Desc -->
                             <div>
                                 <label class="form-label" for="resume-target-role">Target Job Role</label>
-                                <select id="resume-target-role" class="form-select" onchange="document.getElementById('target-role-select').value = this.value">
+                                <select id="resume-target-role" class="form-select" onchange="handleResumeTargetRoleChange(this.value)">
                                     <option value="Full Stack Developer">Full Stack Developer</option>
                                     <option value="Python Developer">Python Developer</option>
                                     <option value="Frontend Developer">Frontend Developer</option>
@@ -337,21 +322,6 @@
                 </div>
             </section>
 
-            <!-- ==================== TAB 3: ROLE & SKILL GAP ==================== -->
-            <section class="tab-pane" id="pane-job-match">
-                <div class="card" style="margin-bottom: 2rem;">
-                    <div class="card-header">
-                        <div>
-                            <h3 class="card-title">Target Role & Industry Skill Gap Matrix</h3>
-                            <p class="card-subtitle">Explore competencies expected by top tech recruiters across 9 engineering specializations.</p>
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem;" id="role-cards-grid">
-                        <!-- Populated dynamically via JS -->
-                    </div>
-                </div>
-            </section>
 
             <!-- ==================== TAB 4: TECHNICAL ASSESSMENT ==================== -->
             <section class="tab-pane" id="pane-assessment">
@@ -621,17 +591,24 @@
 <script src="js/dashboard.js"></script>
 
 <script>
-    // Role selection updater
-    function handleTargetRoleChange() {
-        const val = document.getElementById("target-role-select").value;
+    // Unified Target Role updater - syncs across localStorage, badges, and backend
+    function handleResumeTargetRoleChange(val) {
+        if (!val) {
+            const el = document.getElementById("resume-target-role");
+            val = el ? el.value : "Full Stack Developer";
+        }
         const user = API.getUser() || {};
         user.target_role = val;
         API.setUser(user);
+
         const roleEl = document.getElementById("sidebar-user-role");
         if (roleEl) roleEl.innerText = val;
 
+        const roleBadge = document.getElementById("topbar-role-badge");
+        if (roleBadge) roleBadge.innerText = val;
+
         const resumeRole = document.getElementById("resume-target-role");
-        if (resumeRole) resumeRole.value = val;
+        if (resumeRole && resumeRole.value !== val) resumeRole.value = val;
 
         const assRole = document.getElementById("assessment-role-select");
         if (assRole) assRole.value = val;
@@ -642,34 +619,9 @@
         API.put("/api/auth/profile", { target_role: val }).catch(() => {});
     }
 
-    // Populate role cards in Role Explorer tab
-    API.get("/api/roles").then(data => {
-        const grid = document.getElementById("role-cards-grid");
-        if (!grid || !data.roles) return;
-        grid.innerHTML = data.roles.map(r => `
-            <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
-                <div>
-                    <span class="badge badge-violet" style="margin-bottom: 0.5rem;">${escapeHtml(r.category)}</span>
-                    <h4 style="font-size: 1.1rem; margin-bottom: 0.35rem;">${escapeHtml(r.title)}</h4>
-                    <p style="font-size: 0.8125rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 0.75rem;">
-                        ${escapeHtml(r.description)}
-                    </p>
-                    <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.35rem;">Core Skills:</div>
-                    <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 1rem;">
-                        ${r.core_skills.map(s => `<span class="badge badge-primary">${escapeHtml(s)}</span>`).join("")}
-                    </div>
-                </div>
-                <button type="button" class="btn btn-outline btn-sm" onclick="selectRoleAndAnalyze('${r.title}')">
-                    Target This Role →
-                </button>
-            </div>
-        `).join("");
-    }).catch(console.warn);
-
-    function selectRoleAndAnalyze(roleTitle) {
-        document.getElementById("target-role-select").value = roleTitle;
-        handleTargetRoleChange();
-        switchTab("resume");
+    function handleTargetRoleChange() {
+        const resumeRole = document.getElementById("resume-target-role");
+        if (resumeRole) handleResumeTargetRoleChange(resumeRole.value);
     }
 </script>
 

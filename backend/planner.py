@@ -92,8 +92,35 @@ def get_skill_resources(skill: str) -> List[dict]:
 def generate_weekly_daily_tasks(week_num: int, skill: str, focus_tier: str, hours_per_week: int) -> List[dict]:
     """Generate 5 actionable daily tasks for the week with estimated hours and completion state."""
     daily_hours = round(hours_per_week / 5.0, 1)
-    
-    if focus_tier == "remedial":
+
+    # Week 12: Capstone Architecture & Implementation (Part 1)
+    if week_num == 12:
+        activities = [
+            ("Day 1: Project Architecture & Spec", f"Draft architecture diagram, database entity relationships, and API contract for your {skill.title()} capstone."),
+            ("Day 2: Core Domain Model & Schemas", f"Implement core data structures, Pydantic/database schemas, and business rules for {skill.title()}."),
+            ("Day 3: Primary API Endpoints & Logic", f"Code the primary CRUD controllers, request validation, and error handlers using {skill.title()}."),
+            ("Day 4: Service Layer & State Flow", f"Integrate external services, state persistence, and mock data pipelines."),
+            ("Day 5: Mid-Sprint Code Review", f"Review implementation, run linters, write initial smoke tests, and document progress.")
+        ]
+    # Week 13: Capstone Polish, Testing & Deployment (Part 2)
+    elif week_num == 13:
+        activities = [
+            ("Day 1: Frontend/Client Integration", f"Connect frontend views with backend endpoints, handling asynchronous states and loading indicators."),
+            ("Day 2: Comprehensive Test Suite", f"Write unit tests and end-to-end integration tests covering edge cases and error responses."),
+            ("Day 3: Containerization & Dockerfile", f"Containerize the application with Docker, multi-stage builds, and environment variables."),
+            ("Day 4: Live Cloud Deployment", f"Deploy the capstone to cloud hosting, configure environment secrets, and verify live URLs."),
+            ("Day 5: README & Demo Documentation", f"Write a comprehensive README with setup instructions, architecture breakdown, and demo GIF.")
+        ]
+    # Week 14: Portfolio Review, Technical Interview & Career Launch
+    elif week_num == 14:
+        activities = [
+            ("Day 1: Resume & GitHub Alignment", f"Update your resume with quantitative achievements from your {skill.title()} capstone and polish your GitHub pinned repositories."),
+            ("Day 2: Core Technical Interview Drill", f"Solve 5 high-frequency technical interview questions on {skill.title()} with optimal time/space complexity."),
+            ("Day 3: System Design & Trade-Offs", f"Practice explaining scalability, caching, load balancing, and failure modes in software architecture."),
+            ("Day 4: Behavioral & Storytelling Mock", f"Structure STAR-format responses for past technical hurdles, debugging triumphs, and team collaboration."),
+            ("Day 5: Final Graduation & Roadmap Completion", f"Complete the final comprehensive assessment and graduate into active job applications.")
+        ]
+    elif focus_tier == "remedial":
         activities = [
             ("Day 1: Concept Fundamentals", f"Review core syntax, mental model, and common misconceptions in {skill.title()}."),
             ("Day 2: Guided Walkthroughs", f"Code along with 2 structured tutorials implementing foundational {skill.title()} examples."),
@@ -138,10 +165,10 @@ def build_personalized_roadmap(
     missing_skills: List[str] = None,
     weak_skills: List[str] = None,
     hours_per_week: int = 8,
-    total_weeks: int = 8
+    total_weeks: int = 14
 ) -> dict:
     """
-    Generate an 8 to 12 week personalized curriculum dynamically structured around
+    Generate an in-depth 14-week personalized curriculum dynamically structured around
     target job requirements, candidate strengths, and evaluated weaknesses.
     """
     candidate_skills = candidate_skills or []
@@ -179,11 +206,27 @@ def build_personalized_roadmap(
             ordered_skills.append(s_norm)
 
     if not ordered_skills:
-        ordered_skills = ["python", "sql", "git", "rest apis"]
+        ordered_skills = ["python", "sql", "git", "rest apis", "docker", "data structures", "fastapi"]
 
     weeks = []
     for week_num in range(1, total_weeks + 1):
-        skill = ordered_skills[(week_num - 1) % len(ordered_skills)]
+        # Determine focus skill and phase
+        if week_num in (12, 13):
+            # Capstone weeks focus on primary core skill + project implementation
+            skill = ordered_skills[0] if ordered_skills else "full stack"
+            phase = "Capstone Build & Deployment"
+        elif week_num == 14:
+            # Interview and career launch week
+            skill = ordered_skills[0] if ordered_skills else "system design"
+            phase = "Technical Interview & Career Launch"
+        else:
+            skill = ordered_skills[(week_num - 1) % len(ordered_skills)]
+            if week_num <= 4:
+                phase = "Foundation & Core Prerequisites"
+            elif week_num <= 8:
+                phase = "Intermediate Architecture & Tools"
+            else:
+                phase = "Advanced Scale & Optimization"
         
         # Determine focus tier based on score
         score_info = assessment_scores.get(skill)
@@ -193,7 +236,13 @@ def build_personalized_roadmap(
         elif isinstance(score_info, (int, float)):
             score_val = float(score_info)
 
-        if score_val is not None:
+        if week_num in (12, 13):
+            focus_tier = "advanced"
+            goal = f"Architect, build, and deploy an end-to-end production {target_role} capstone applying {skill.title()}."
+        elif week_num == 14:
+            focus_tier = "advanced"
+            goal = f"Master technical coding interviews, system design fundamentals, and resume presentation for {target_role}."
+        elif score_val is not None:
             if score_val < 50:
                 focus_tier = "remedial"
                 goal = f"Reinforce core concepts, syntax, and fundamental patterns in {skill.title()}."
@@ -213,22 +262,43 @@ def build_personalized_roadmap(
         daily_tasks = generate_weekly_daily_tasks(week_num, skill, focus_tier, hours_per_week)
         resources = get_skill_resources(skill)
 
+        # Build progressive practical exercises and project deliverables
+        if week_num in (12, 13):
+            exercises = [
+                f"Implement end-to-end user workflows with database transactions in your {target_role} project.",
+                f"Configure automated CI/CD pipeline and containerized deployment scripts."
+            ]
+            project_title = f"Week {week_num} Capstone: Production {target_role} System (Part {week_num - 11})"
+            project_desc = f"Develop and deploy a complete production-grade application demonstrating full mastery of {skill.title()} and {target_role} core competencies."
+        elif week_num == 14:
+            exercises = [
+                f"Conduct a timed mock technical interview solving 3 algorithmic challenges.",
+                f"Present a 5-minute technical walkthrough of your deployed capstone architecture."
+            ]
+            project_title = "Week 14 Milestone: Portfolio & Interview Readiness Dossier"
+            project_desc = "Publish your live project URL, documented GitHub repository, and technical portfolio ready for recruiter submission."
+        else:
+            exercises = [
+                f"Write a modular solution solving real-world {skill.title()} problems.",
+                f"Implement automated tests verifying edge cases in your {skill.title()} code."
+            ]
+            project_title = f"Week {week_num} Milestone: {skill.title()} Practical Deliverable"
+            project_desc = f"Build and document a self-contained code module utilizing {skill.title()} that can be showcased on your portfolio."
+
         weeks.append({
             "week": week_num,
             "focus_skill": skill,
+            "phase": phase,
             "category": SKILL_CATEGORIES.get(skill, "General Engineering"),
             "focus_tier": focus_tier,
             "goal": goal,
             "hours_allocated": hours_per_week,
             "daily_tasks": daily_tasks,
             "resources": resources,
-            "practical_exercises": [
-                f"Write a modular solution solving real-world {skill.title()} problems.",
-                f"Implement automated tests verifying edge cases in your {skill.title()} code."
-            ],
+            "practical_exercises": exercises,
             "weekly_project": {
-                "title": f"Week {week_num} Milestone: {skill.title()} Practical Deliverable",
-                "description": f"Build and document a self-contained code module utilizing {skill.title()} that can be showcased on your portfolio."
+                "title": project_title,
+                "description": project_desc
             },
             "weekly_test": {
                 "skill": skill,

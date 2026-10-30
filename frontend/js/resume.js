@@ -135,7 +135,10 @@ async function runCompleteAnalysis() {
     btn.disabled = true;
     btn.innerHTML = `<span>⏳ Analyzing with Gemini AI...</span>`;
 
-    const targetRole = document.getElementById("target-role-select").value;
+    const targetRole = (document.getElementById("resume-target-role")?.value) || 
+                       (document.getElementById("target-role-select")?.value) || 
+                       (API.getUser()?.target_role) || 
+                       "Full Stack Developer";
     const jobDescription = document.getElementById("job-desc-input").value;
     const hours = parseInt(document.getElementById("study-hours-input").value, 10) || 8;
 

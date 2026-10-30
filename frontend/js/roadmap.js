@@ -28,11 +28,11 @@ function renderEmptyRoadmapState() {
             <div class="empty-state-icon">🗺️</div>
             <h3 class="empty-state-title">No Active Roadmap Generated</h3>
             <p class="empty-state-description">
-                Generate a personalized 8-week curriculum tailored to your target role, resume skills, and assessment performance.
+                Generate a personalized 14-week curriculum tailored to your target role, resume skills, and assessment performance.
             </p>
             <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
                 <button type="button" class="btn btn-primary" onclick="generateRoadmapFromCurrentProfile()">
-                    ⚡ Generate 8-Week Roadmap
+                    ⚡ Generate 14-Week Roadmap
                 </button>
                 <button type="button" class="btn btn-secondary" onclick="switchTab('resume')">
                     📄 Upload Resume First
@@ -46,7 +46,7 @@ async function generateRoadmapFromCurrentProfile() {
     const user = API.getUser();
     const targetRole = user ? user.target_role : "Full Stack Developer";
 
-    showToast("Generating personalized roadmap...", "info");
+    showToast("Generating personalized 14-week roadmap...", "info");
 
     try {
         const res = await API.post("/api/planner/generate", {
@@ -55,7 +55,7 @@ async function generateRoadmapFromCurrentProfile() {
         });
 
         currentRoadmap = res;
-        showToast("8-Week Roadmap ready!", "success");
+        showToast("14-Week Roadmap ready!", "success");
         renderRoadmapUI(res);
 
         if (typeof loadDashboardData === "function") {
@@ -81,10 +81,10 @@ function renderRoadmapUI(plan) {
             <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
                 <div>
                     <span class="badge" style="background: rgba(255,255,255,0.15); color: #fff; margin-bottom: 0.5rem;">
-                        ${escapeHtml(plan.target_role || "Target Career")} &bull; 8-Week Path
+                        ${escapeHtml(plan.target_role || "Target Career")} &bull; 14-Week Path
                     </span>
-                    <h2>Personalized Learning Roadmap</h2>
-                    <p>Designed around your schedule (${plan.hours_per_week || 8} hrs/week). Mark daily tasks complete to track mastery.</p>
+                    <h2>Personalized 14-Week Roadmap</h2>
+                    <p>Comprehensive 14-week curriculum designed around your schedule (${plan.hours_per_week || 8} hrs/week). Mark daily tasks complete to track mastery.</p>
                 </div>
                 <div style="text-align: right;">
                     <div style="font-size: 2rem; font-weight: 800;">${pct}%</div>
@@ -111,13 +111,16 @@ function renderWeekCard(week, planId) {
     const exercises = week.practical_exercises || [];
     const project = week.weekly_project || {};
     const test = week.weekly_test || {};
+    const phaseBadge = week.phase ? `<span class="badge badge-secondary" style="font-size: 0.72rem; margin-left: 0.5rem;">${escapeHtml(week.phase)}</span>` : '';
 
     return `
         <div class="week-card" id="week-card-${week.week}">
             <div class="week-card-header">
                 <div>
-                    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.25rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.25rem; flex-wrap: wrap;">
                         <h3 style="font-size: 1.15rem;">Week ${week.week}: ${escapeHtml(week.focus_skill.toUpperCase())}</h3>
+                        ${phaseBadge}
+                    </div>
                         <span class="badge ${week.focus_tier === 'remedial' ? 'badge-warning' : (week.focus_tier === 'advanced' ? 'badge-violet' : 'badge-primary')}">
                             ${escapeHtml(week.category || "Skill Module")}
                         </span>

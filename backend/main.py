@@ -55,6 +55,8 @@ from schemas import (
     UserRegisterRequest,
     UserLoginRequest,
     UserProfileUpdateRequest,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
     ResumeAnalyzeManualRequest,
     AssessmentGenerateRequest,
     AssessmentSubmitRequest,
@@ -85,6 +87,7 @@ IN_MEMORY_ASSESSMENTS: Dict[str, dict] = {}
 IN_MEMORY_WEEKLY_TESTS: Dict[str, dict] = {}
 IN_MEMORY_PLANS: Dict[str, dict] = {}
 IN_MEMORY_ANALYSES: Dict[str, dict] = {}
+RECOVERY_SESSIONS: Dict[str, dict] = {}
 
 
 # -------------------- HEALTH & SYSTEM ENDPOINTS --------------------
@@ -362,6 +365,115 @@ def login_user(request: UserLoginRequest):
         )
 
 
+@app.post("/api/auth/forgot-password")
+def forgot_password(request: ForgotPasswordRequest):
+    """
+    Initiate password recovery for a registered student.
+    Generates a secure recovery token/OTP via Supabase Auth admin API.
+    """
+    import time
+    import secrets
+    client = get_supabase()
+    email = str(request.email).strip().lower()
+
+    try:
+        # Check if user exists or generate recovery link via Supabase Auth Admin
+        rec_res = client.auth.admin.generate_link({
+            "type": "recovery",
+            "email": email
+        })
+
+        user_id = str(rec_res.user.id)
+        props = getattr(rec_res, "properties", None)
+        email_otp = getattr(props, "email_otp", None) if props else None
+        hashed_token = getattr(props, "hashed_token", None) if props else None
+
+        # Fallback 6-digit OTP if email_otp wasn't returned
+        if not email_otp:
+            email_otp = f"{secrets.randbelow(900000) + 100000}"
+
+        RECOVERY_SESSIONS[email] = {
+            "user_id": user_id,
+            "email": email,
+            "otp": str(email_otp).strip(),
+            "token": str(hashed_token).strip() if hashed_token else "",
+            "expires_at": time.time() + 900
+        }
+
+        return {
+            "message": f"Password recovery verification code generated for {email}.",
+            "email": email,
+            "otp": str(email_otp).strip(),
+            "expires_in_minutes": 15
+        }
+
+    except Exception as exc:
+        msg = str(exc)
+        if "user not found" in msg.lower() or "not found" in msg.lower():
+            raise HTTPException(
+                status_code=404,
+                detail=f"No registered account found with email '{email}'. Please check your spelling or create an account."
+            )
+        raise HTTPException(
+            status_code=400,
+            detail=f"Password recovery error: {msg}"
+        )
+
+
+@app.post("/api/auth/reset-password")
+def reset_password(request: ResetPasswordRequest):
+    """
+    Complete password reset with verified token/OTP and update credentials in Supabase.
+    """
+    import time
+    client = get_supabase()
+    email = str(request.email).strip().lower()
+    token_or_otp = request.token_or_otp.strip()
+    new_password = request.new_password
+
+    if len(new_password) < 6:
+        raise HTTPException(
+            status_code=400,
+            detail="Password must be at least 6 characters long."
+        )
+
+    session = RECOVERY_SESSIONS.get(email)
+    if not session or time.time() > session.get("expires_at", 0):
+        raise HTTPException(
+            status_code=400,
+            detail="Password recovery session expired or invalid. Please request a new recovery code."
+        )
+
+    expected_otp = session.get("otp", "").strip()
+    expected_token = session.get("token", "").strip()
+
+    if token_or_otp != expected_otp and token_or_otp != expected_token:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid verification code or recovery token. Please check the code and try again."
+        )
+
+    user_id = session.get("user_id")
+    try:
+        # Update user credentials securely in Supabase Auth
+        client.auth.admin.update_user_by_id(user_id, {
+            "password": new_password
+        })
+
+        # Evict recovery session
+        RECOVERY_SESSIONS.pop(email, None)
+
+        return {
+            "message": "Password successfully updated! You can now log in with your new password.",
+            "email": email
+        }
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update password in Supabase: {str(exc)}"
+        )
+
+
 @app.get("/api/auth/me")
 def get_current_user_profile(user: Optional[dict] = Depends(verify_bearer_token)):
     """Retrieve verified profile of current authenticated student."""
@@ -504,7 +616,7 @@ async def analyze_skills_endpoint(
         missing_skills=[m["skill"] for m in gap_analysis["missing_skills"]],
         weak_skills=[w["skill"] for w in gap_analysis["weak_skills"]],
         hours_per_week=hours_per_week,
-        total_weeks=8
+        total_weeks=14
     )
 
     analysis_id = str(uuid.uuid4())
@@ -820,7 +932,7 @@ def generate_personalized_learning_plan(
         missing_skills=[m["skill"] for m in gap["missing_skills"]],
         weak_skills=[w["skill"] for w in gap["weak_skills"]],
         hours_per_week=hours,
-        total_weeks=8
+        total_weeks=14
     )
 
     plan_id = str(uuid.uuid4())
