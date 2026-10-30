@@ -261,3 +261,4 @@ For live hackathon judging:
    - Click **"Apply Adaptive Changes to Roadmap"** to watch the future weeks automatically adapt based on your score without overwriting past weeks!
 7. In the **Overview** tab:
    - Review your live Competency Radar Chart, real activity history, and recommended capstone projects.
+
