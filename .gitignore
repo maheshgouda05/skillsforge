@@ -36,4 +36,6 @@ wheels/
 # Test & DB artifacts
 *.db
 *.sqlite3
+backend/placements_cache.json
+
 

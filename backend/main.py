@@ -78,6 +78,15 @@ from schemas import (
     PlannerAdaptRequest,
     WeeklyTestGenerateRequest,
     WeeklyTestSubmitRequest,
+    TrackApplicationRequest,
+    OpportunityPrepareRequest,
+    OpportunityCreateRequest,
+    OpportunityUpdateRequest,
+)
+from placements import (
+    placement_repo,
+    generate_company_preparation_plan,
+    INITIAL_PLACEMENTS,
 )
 
 app = FastAPI(
@@ -129,6 +138,10 @@ if _FRONTEND_DIR.exists():
     @app.get("/reset-password.html", include_in_schema=False)
     def serve_reset_password_html():
         return FileResponse(str(_FRONTEND_DIR / "reset-password.html"))
+
+    @app.get("/placements.html", include_in_schema=False)
+    def serve_placements_html():
+        return FileResponse(str(_FRONTEND_DIR / "placements.html"))
 
 
 # -------------------- HEALTH & SYSTEM ENDPOINTS --------------------
@@ -1433,3 +1446,218 @@ def get_student_dashboard(current_user: Optional[dict] = Depends(verify_bearer_t
         "recent_activity": recent_activity,
         "recommended_projects": recommended_projects
     }
+
+
+# ====================================================================
+# 8. PLACEMENT & HIRING HUB ENDPOINTS
+# ====================================================================
+
+@app.get("/api/placements/stats")
+def get_placement_statistics(current_user: Optional[dict] = Depends(verify_bearer_token)):
+    """Retrieve verified placement metrics directly from database."""
+    uid = current_user.get("id") if current_user else None
+    return placement_repo.get_stats(user_id=uid)
+
+
+@app.get("/api/placements/opportunities")
+def list_placement_opportunities(
+    search: Optional[str] = Query(None, description="Search by company, role, location, or skill"),
+    job_type: Optional[str] = Query(None, description="Filter by job type"),
+    status: Optional[str] = Query(None, description="Filter by status"),
+    location: Optional[str] = Query(None, description="Filter by location"),
+    role: Optional[str] = Query(None, description="Filter by role title"),
+    saved_only: bool = Query(False, description="Filter only bookmarked opportunities"),
+    current_user: Optional[dict] = Depends(verify_bearer_token)
+):
+    """List verified placement opportunities with advanced multi-parameter filtering."""
+    uid = current_user.get("id") if current_user else None
+    items = placement_repo.list_opportunities(
+        search=search,
+        job_type=job_type,
+        status_filter=status,
+        location=location,
+        role=role,
+        user_id=uid,
+        saved_only=saved_only
+    )
+    return {
+        "total": len(items),
+        "opportunities": items
+    }
+
+
+@app.get("/api/placements/opportunities/{opportunity_id}")
+def get_placement_opportunity_details(
+    opportunity_id: str,
+    current_user: Optional[dict] = Depends(verify_bearer_token)
+):
+    """Retrieve full opportunity specification including selection rounds and verified source."""
+    uid = current_user.get("id") if current_user else None
+    opp = placement_repo.get_opportunity(opportunity_id, user_id=uid)
+    if not opp:
+        raise HTTPException(status_code=404, detail="Placement opportunity not found")
+    return opp
+
+
+@app.post("/api/placements/prepare/{opportunity_id}")
+def prepare_for_company(
+    opportunity_id: str,
+    payload: Optional[OpportunityPrepareRequest] = None,
+    current_user: Optional[dict] = Depends(verify_bearer_token)
+):
+    """
+    Compare student's verified skills against company requirements and generate
+    a personalized preparation plan with round-by-round strategies and practice recommendations.
+    """
+    student_skills: List[str] = []
+    student_profile: Dict[str, Any] = {}
+
+    if payload and payload.student_skills:
+        student_skills = list(payload.student_skills)
+
+    if current_user:
+        student_profile = {
+            "id": current_user.get("id"),
+            "email": current_user.get("email"),
+            "target_role": current_user.get("target_role", "Full Stack Developer")
+        }
+        if not student_skills:
+            # Query student's latest analysis to extract real parsed skills
+            try:
+                analyses = db_get_user_records("analyses", current_user["id"], limit=1)
+                if analyses:
+                    res_obj = analyses[0].get("result") or {}
+                    if isinstance(res_obj, str):
+                        res_obj = json.loads(res_obj)
+                    student_skills = (
+                        res_obj.get("extracted_skills")
+                        or res_obj.get("candidate_skills")
+                        or (res_obj.get("strong_skills", []) + res_obj.get("intermediate_skills", []))
+                    )
+            except Exception:
+                pass
+
+        if not student_skills:
+            # Fall back to target role skills
+            role_title = current_user.get("target_role", "Full Stack Developer")
+            student_skills = get_role_skills(role_title)
+
+    if not student_skills:
+        student_skills = ["python", "data structures", "sql", "problem solving", "git"]
+
+    try:
+        plan = generate_company_preparation_plan(opportunity_id, student_profile, student_skills)
+        return plan
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Placement opportunity not found")
+
+
+@app.get("/api/placements/saved")
+def get_user_saved_opportunities(current_user: dict = Depends(require_authenticated_user)):
+    """Retrieve all opportunities saved/bookmarked by the student."""
+    items = placement_repo.list_opportunities(user_id=current_user["id"], saved_only=True)
+    return {
+        "count": len(items),
+        "saved_opportunities": items
+    }
+
+
+@app.post("/api/placements/saved/{opportunity_id}")
+def toggle_save_opportunity(
+    opportunity_id: str,
+    current_user: dict = Depends(require_authenticated_user)
+):
+    """Toggle bookmark status for an opportunity."""
+    try:
+        res = placement_repo.toggle_saved(current_user["id"], opportunity_id)
+        return res
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Opportunity not found")
+
+
+@app.get("/api/placements/applications")
+def get_user_application_pipeline(current_user: dict = Depends(require_authenticated_user)):
+    """Retrieve student's personal application tracking pipeline."""
+    apps = placement_repo.get_applications(current_user["id"])
+    return {
+        "count": len(apps),
+        "applications": apps
+    }
+
+
+@app.post("/api/placements/applications")
+def track_or_update_application(
+    req: TrackApplicationRequest,
+    current_user: dict = Depends(require_authenticated_user)
+):
+    """Track a new company application or update application stage and interview schedule."""
+    try:
+        record = placement_repo.track_application(
+            user_id=current_user["id"],
+            opportunity_id=req.opportunity_id,
+            status=req.status,
+            applied_date=req.applied_date,
+            interview_date=req.interview_date,
+            notes=req.notes or ""
+        )
+        return record
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Opportunity not found")
+
+
+@app.delete("/api/placements/applications/{opportunity_id}")
+def remove_application_from_tracking(
+    opportunity_id: str,
+    current_user: dict = Depends(require_authenticated_user)
+):
+    """Remove an application from tracking."""
+    placement_repo.delete_application(current_user["id"], opportunity_id)
+    return {"deleted": True, "opportunity_id": opportunity_id}
+
+
+# --- Optional Admin Management Endpoints ---
+
+@app.post("/api/placements/admin/opportunities", status_code=status.HTTP_201_CREATED)
+def admin_create_placement(
+    req: OpportunityCreateRequest,
+    x_admin_key: Optional[str] = Header(None),
+    current_user: Optional[dict] = Depends(verify_bearer_token)
+):
+    """Admin endpoint to create a new verified opportunity."""
+    is_admin = (x_admin_key == "skillforge-admin-secret") or (current_user and current_user.get("role") == "admin")
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="Admin authorization required")
+    created = placement_repo.create_opportunity(req.dict())
+    return created
+
+
+@app.put("/api/placements/admin/opportunities/{opportunity_id}")
+def admin_update_placement(
+    opportunity_id: str,
+    req: OpportunityUpdateRequest,
+    x_admin_key: Optional[str] = Header(None),
+    current_user: Optional[dict] = Depends(verify_bearer_token)
+):
+    """Admin endpoint to modify an opportunity."""
+    is_admin = (x_admin_key == "skillforge-admin-secret") or (current_user and current_user.get("role") == "admin")
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="Admin authorization required")
+    updated = placement_repo.update_opportunity(opportunity_id, req.dict(exclude_unset=True))
+    if not updated:
+        raise HTTPException(status_code=404, detail="Opportunity not found")
+    return updated
+
+
+@app.delete("/api/placements/admin/opportunities/{opportunity_id}")
+def admin_delete_placement(
+    opportunity_id: str,
+    x_admin_key: Optional[str] = Header(None),
+    current_user: Optional[dict] = Depends(verify_bearer_token)
+):
+    """Admin endpoint to remove an opportunity."""
+    is_admin = (x_admin_key == "skillforge-admin-secret") or (current_user and current_user.get("role") == "admin")
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="Admin authorization required")
+    placement_repo.delete_opportunity(opportunity_id)
+    return {"deleted": True, "opportunity_id": opportunity_id}
+

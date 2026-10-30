@@ -237,10 +237,83 @@ def run_tests():
         "email": test_email,
         "password": new_test_password
     })
-    assert login_new.get("access_token"), "Login with new password failed"
+    token = login_new.get("access_token")
+    assert token, "Login with new password failed"
     print("✓ Successfully logged in with new password!")
 
-    print("\n=== ALL 12 END-TO-END TESTS PASSED WITH 100% SUCCESS! ===")
+    # 13. Testing Placement & Hiring Hub
+    print("\n13. Testing Placement & Hiring Hub (Stats, Listings, Prepare, Bookmarks, Tracker)...")
+    stats = request_json("/api/placements/stats", token=token)
+    assert stats["upcoming_drives"] >= 10, f"Upcoming drives count: {stats['upcoming_drives']}"
+    assert stats["open_applications"] >= 10, f"Open applications count: {stats['open_applications']}"
+    assert stats["internship_opportunities"] >= 3, f"Internships count: {stats['internship_opportunities']}"
+    assert stats["application_deadlines"] >= 10, f"Deadlines count: {stats['application_deadlines']}"
+    print(f"✓ Placement statistics verified: {stats}")
+
+    # Test opportunities listing
+    opps = request_json("/api/placements/opportunities", token=token)
+    assert opps["total"] >= 15, f"Opportunities count: {opps['total']}"
+    first_opp = opps["opportunities"][0]
+    opp_id = first_opp["id"]
+    print(f"✓ Retrieved {opps['total']} verified opportunities. Sample: {first_opp['company_name']} - {first_opp['role_title']}")
+
+    # Test filtering by job_type
+    internships = request_json("/api/placements/opportunities?job_type=Internship", token=token)
+    assert len(internships["opportunities"]) >= 3, f"Internships count: {len(internships['opportunities'])}"
+    print(f"✓ Filtered {len(internships['opportunities'])} internship opportunities.")
+
+    # Test search query
+    tcs_search = request_json("/api/placements/opportunities?search=TCS", token=token)
+    assert len(tcs_search["opportunities"]) >= 1, "TCS search returned 0 items"
+    tcs_opp = tcs_search["opportunities"][0]
+    tcs_id = tcs_opp["id"]
+    print(f"✓ Search filter verified: found {tcs_opp['company_name']}")
+
+    # Test Prepare for Company
+    prep_res = request_json(f"/api/placements/prepare/{tcs_id}", method="POST", data={
+        "student_skills": ["python", "sql", "git"]
+    }, token=token)
+    assert prep_res["match_score"] is not None
+    assert len(prep_res["round_strategies"]) >= 3
+    assert len(prep_res["recommended_projects"]) >= 1
+    assert "tata" in prep_res["company_name"].lower() or "tcs" in prep_res.get("company_name", "").lower()
+    print(f"✓ Generated personalized preparation plan for {prep_res['company_name']}: Match {prep_res['match_score']}%, Rounds: {len(prep_res['round_strategies'])}")
+
+    # Test Bookmark / Save
+    save_toggle = request_json(f"/api/placements/saved/{tcs_id}", method="POST", token=token)
+    assert save_toggle["is_saved"] is True, "Save toggle failed"
+    saved_list = request_json("/api/placements/saved", token=token)
+    assert saved_list["count"] >= 1, "Saved opportunities count is 0"
+    print("✓ Successfully bookmarked opportunity and verified in saved list.")
+
+    # Test Application Tracker
+    track_res = request_json("/api/placements/applications", method="POST", data={
+        "opportunity_id": tcs_id,
+        "status": "Preparing",
+        "applied_date": "2026-10-30",
+        "notes": "Revising TCS NQT cognitive ability and coding practice questions"
+    }, token=token)
+    assert track_res["status"] == "Preparing"
+
+    apps_list = request_json("/api/placements/applications", token=token)
+    assert apps_list["count"] >= 1
+    assert apps_list["applications"][0]["opportunity"]["company_name"] == tcs_opp["company_name"]
+    print(f"✓ Successfully tracked application for {tcs_opp['company_name']}: Stage = {track_res['status']}")
+
+    # Update Application Stage to Applied
+    update_track = request_json("/api/placements/applications", method="POST", data={
+        "opportunity_id": tcs_id,
+        "status": "Applied"
+    }, token=token)
+    assert update_track["status"] == "Applied"
+    print("✓ Successfully transitioned application stage to 'Applied'.")
+
+    # Delete application tracking
+    del_track = request_json(f"/api/placements/applications/{tcs_id}", method="DELETE", token=token)
+    assert del_track["deleted"] is True
+    print("✓ Successfully cleaned up tracked application.")
+
+    print("\n=== ALL 13 END-TO-END TESTS PASSED WITH 100% SUCCESS! ===")
 
 if __name__ == "__main__":
     run_tests()

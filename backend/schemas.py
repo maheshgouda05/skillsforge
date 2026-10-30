@@ -90,3 +90,58 @@ class WeeklyTestSubmitRequest(BaseModel):
     test_id: str = Field(...)
     answers: Dict[str, int] = Field(...)
 
+
+# -------------------- PLACEMENT & HIRING HUB SCHEMAS --------------------
+
+class TrackApplicationRequest(BaseModel):
+    opportunity_id: str = Field(...)
+    status: str = Field(default="Interested", description="Interested, Preparing, Applied, Assessment Completed, Interview Scheduled, Selected, Rejected")
+    applied_date: Optional[str] = None
+    interview_date: Optional[str] = None
+    notes: Optional[str] = ""
+
+
+class OpportunityPrepareRequest(BaseModel):
+    student_skills: Optional[List[str]] = Field(default=None)
+
+
+class OpportunityCreateRequest(BaseModel):
+    company_name: str = Field(...)
+    company_short: Optional[str] = None
+    company_logo: Optional[str] = ""
+    role_title: str = Field(...)
+    job_type: str = Field(default="Full-time")
+    location: str = Field(default="Pan India")
+    package_ctc: str = Field(default="Not specified")
+    eligibility_criteria: str = Field(...)
+    required_skills: List[str] = Field(default_factory=list)
+    selection_rounds: List[Dict[str, Any]] = Field(default_factory=list)
+    opening_date: Optional[str] = "Open now"
+    deadline_date: Optional[str] = "Not specified"
+    recruitment_date: Optional[str] = "Not specified"
+    status: Optional[str] = "Currently Open"
+    apply_url: str = Field(...)
+    source_url: Optional[str] = None
+    is_verified: Optional[bool] = True
+
+
+class OpportunityUpdateRequest(BaseModel):
+    company_name: Optional[str] = None
+    company_short: Optional[str] = None
+    company_logo: Optional[str] = None
+    role_title: Optional[str] = None
+    job_type: Optional[str] = None
+    location: Optional[str] = None
+    package_ctc: Optional[str] = None
+    eligibility_criteria: Optional[str] = None
+    required_skills: Optional[List[str]] = None
+    selection_rounds: Optional[List[Dict[str, Any]]] = None
+    opening_date: Optional[str] = None
+    deadline_date: Optional[str] = None
+    recruitment_date: Optional[str] = None
+    status: Optional[str] = None
+    apply_url: Optional[str] = None
+    source_url: Optional[str] = None
+    is_verified: Optional[bool] = None
+
+

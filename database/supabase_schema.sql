@@ -169,3 +169,57 @@ CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
+-- --------------------------------------------------------------------
+-- 7. PLACEMENT & HIRING HUB TABLES
+-- --------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.placement_opportunities (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_name TEXT NOT NULL,
+    company_logo TEXT,
+    role_title TEXT NOT NULL,
+    job_type TEXT NOT NULL DEFAULT 'Full-time',
+    location TEXT NOT NULL DEFAULT 'Pan India',
+    package_ctc TEXT NOT NULL DEFAULT 'Not specified',
+    eligibility_criteria TEXT NOT NULL,
+    required_skills JSONB NOT NULL DEFAULT '[]'::jsonb,
+    selection_rounds JSONB NOT NULL DEFAULT '[]'::jsonb,
+    opening_date TEXT DEFAULT 'Open now',
+    deadline_date TEXT DEFAULT 'Not specified',
+    recruitment_date TEXT DEFAULT 'Not specified',
+    status TEXT NOT NULL DEFAULT 'Currently Open' CHECK (status IN ('Currently Open', 'Upcoming', 'Closing Soon', 'Closed', 'Completed', 'Unverified')),
+    apply_url TEXT NOT NULL,
+    source_url TEXT NOT NULL,
+    is_verified BOOLEAN DEFAULT TRUE,
+    last_verified_at TEXT NOT NULL DEFAULT CURRENT_DATE::text,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.saved_opportunities (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    opportunity_id UUID REFERENCES public.placement_opportunities(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(user_id, opportunity_id)
+);
+
+CREATE TABLE IF NOT EXISTS public.student_applications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    opportunity_id UUID REFERENCES public.placement_opportunities(id) ON DELETE CASCADE,
+    status TEXT NOT NULL DEFAULT 'Interested' CHECK (status IN ('Interested', 'Preparing', 'Applied', 'Assessment Completed', 'Interview Scheduled', 'Selected', 'Rejected')),
+    applied_date TEXT,
+    interview_date TEXT,
+    notes TEXT DEFAULT '',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(user_id, opportunity_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_placement_opps_status ON public.placement_opportunities(status);
+CREATE INDEX IF NOT EXISTS idx_placement_opps_type ON public.placement_opportunities(job_type);
+CREATE INDEX IF NOT EXISTS idx_placement_opps_company ON public.placement_opportunities(company_name);
+CREATE INDEX IF NOT EXISTS idx_saved_opps_user ON public.saved_opportunities(user_id);
+CREATE INDEX IF NOT EXISTS idx_student_apps_user ON public.student_applications(user_id);
+
+
